@@ -34,9 +34,6 @@ public class UserRepositoryImpl implements UserRepository {
 
     @Override
     public User update(User user) {
-        if (!users.containsKey(user.getId())) {
-            return null;
-        }
         users.put(user.getId(), user);
         return user;
     }
