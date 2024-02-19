@@ -11,7 +11,7 @@ import javax.validation.constraints.NotNull;
  */
 @Data
 public class User {
-    private final Integer id;
+    private Integer id;
 
     @NotNull
     @NotBlank

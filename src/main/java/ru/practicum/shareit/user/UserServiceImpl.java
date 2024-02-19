@@ -20,7 +20,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public User saveUser(User user) {
         if (isEmailDuplicate(user.getEmail())) {
-            throw new ValidationException("Нельзя создавать пользователей с одинаковыми почтами");
+            throw new ValidationException(String.format("Пользователь с почтой %s уже зарегистрирован", user.getEmail()));
         }
         return repo.save(user);
     }
@@ -40,14 +40,20 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User updateUser(User user) {
-        if (user.getId() == null) {
+    public User updateUser(User user, Integer userId) {
+        if (userId == null) {
             throw new ValidationException("Идентификатор пользователя равен null");
         }
-        if (repo.get(user.getId()) == null) {
-            throw new NotFoundException(String.format("Пользователь для обновления с идентификатором %s не найден", user.getId()));
+        User foundUser = repo.get(userId);
+        if (foundUser == null) {
+            throw new NotFoundException(String.format("Пользователь для обновления с идентификатором %s не найден", userId));
         }
-        return repo.update(user);
+        if (isEmailDuplicate(user.getEmail()) && !user.getEmail().equals(foundUser.getEmail())) {
+            throw new ValidationException(String.format("Пользователь с почтой %s уже зарегистрирован", user.getEmail()));
+        }
+        user.setId(userId);
+        User updatedUser = fillUser(user, foundUser);
+        return repo.update(updatedUser);
     }
 
     private boolean isEmailDuplicate(String email) {
@@ -55,5 +61,14 @@ public class UserServiceImpl implements UserService {
         return users.stream()
                 .map(User::getEmail)
                 .anyMatch(userEmail -> userEmail.equals(email));
+    }
+
+    private User fillUser(User newUser, User oldUser) {
+        if (newUser.getName() == null) {
+            newUser.setName(oldUser.getName());
+        } else if (newUser.getEmail() == null) {
+            newUser.setEmail(oldUser.getEmail());
+        }
+        return newUser;
     }
 }

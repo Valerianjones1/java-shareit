@@ -18,6 +18,7 @@ public class UserRepositoryImpl implements UserRepository {
 
     @Override
     public User save(User user) {
+        user.setId(getId());
         users.put(user.getId(), user);
         return user;
     }
@@ -36,5 +37,14 @@ public class UserRepositoryImpl implements UserRepository {
     public User update(User user) {
         users.put(user.getId(), user);
         return user;
+    }
+
+    private Integer getId() {
+        int lastId = users.values()
+                .stream()
+                .mapToInt(User::getId)
+                .max()
+                .orElse(0);
+        return lastId + 1;
     }
 }
