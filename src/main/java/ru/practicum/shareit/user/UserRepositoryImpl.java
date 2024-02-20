@@ -10,6 +10,7 @@ import java.util.Map;
 @Repository
 public class UserRepositoryImpl implements UserRepository {
     private final Map<Integer, User> users = new HashMap<>();
+    private Integer idCounter = 0;
 
     @Override
     public List<User> getAll() {
@@ -40,11 +41,6 @@ public class UserRepositoryImpl implements UserRepository {
     }
 
     private Integer getId() {
-        int lastId = users.values()
-                .stream()
-                .mapToInt(User::getId)
-                .max()
-                .orElse(0);
-        return lastId + 1;
+        return ++idCounter;
     }
 }
