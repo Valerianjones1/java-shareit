@@ -25,20 +25,20 @@ public class UserController {
         return service.saveUser(user);
     }
 
-    @PatchMapping("/{id}")
+    @PatchMapping("/{userId}")
     public User updateUser(@RequestBody User user,
-                           @PathVariable Integer id) {
-        return service.updateUser(user, id);
+                           @PathVariable Integer userId) {
+        return service.updateUser(user, userId);
     }
 
-    @GetMapping("/{id}")
-    public User getUser(@PathVariable Integer id) {
-        return service.getUser(id);
+    @GetMapping("/{userId}")
+    public User getUser(@PathVariable Integer userId) {
+        return service.getUser(userId);
     }
 
-    @DeleteMapping("/{id}")
-    public void removeUser(@PathVariable Integer id) {
-        service.removeUser(id);
+    @DeleteMapping("/{userId}")
+    public void removeUser(@PathVariable Integer userId) {
+        service.removeUser(userId);
     }
 
 }

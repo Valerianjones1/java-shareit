@@ -13,7 +13,7 @@ import javax.validation.constraints.Size;
  */
 @Data
 public class ItemDto {
-    private final Integer id;
+    private Integer id;
 
     @NotNull
     @NotBlank
@@ -25,9 +25,4 @@ public class ItemDto {
     private String description;
 
     private boolean available;
-
-    @NotNull
-    private User owner;
-
-    private ItemRequest request;
 }

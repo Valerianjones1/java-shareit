@@ -13,7 +13,7 @@ import javax.validation.constraints.Size;
  */
 @Data
 public class Item {
-    private final Integer id;
+    private Integer id;
 
     @NotNull
     @NotBlank
@@ -27,7 +27,7 @@ public class Item {
     private boolean available;
 
     @NotNull
-    private User owner;
+    private Integer owner;
 
-    private ItemRequest request;
+    private Integer request;
 }
