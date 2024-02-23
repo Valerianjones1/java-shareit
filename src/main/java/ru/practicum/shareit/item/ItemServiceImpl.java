@@ -68,6 +68,14 @@ public class ItemServiceImpl implements ItemService {
         return mapper.map(updatedItem, ItemDto.class);
     }
 
+    @Override
+    public List<ItemDto> searchItems(String text) {
+        List<Item> searchedItems = repo.searchItems(text);
+        return searchedItems.stream()
+                .map(item -> mapper.map(item, ItemDto.class))
+                .collect(Collectors.toList());
+    }
+
     private boolean isUserExists(Integer userId) {
         try {
             userService.getUser(userId);

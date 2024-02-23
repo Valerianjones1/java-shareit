@@ -12,4 +12,6 @@ public interface ItemRepository {
     List<Item> getAll(Integer ownerId);
 
     Item update(Item item);
+
+    List<Item> searchItems(String text);
 }
