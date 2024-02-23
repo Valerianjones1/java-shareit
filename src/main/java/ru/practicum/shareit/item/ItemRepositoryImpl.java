@@ -11,15 +11,16 @@ import java.util.Map;
 @Repository
 public class ItemRepositoryImpl implements ItemRepository {
 
-    private Map<Integer, Item> items = new HashMap<>();
+    private final Map<Integer, Item> items = new HashMap<>();
 
     private Integer idCounter = 0;
 
 
     @Override
     public Item save(Item item) {
-        item.setId(getId());
-        items.put(getId(), item);
+        Integer id = getId();
+        item.setId(id);
+        items.put(id, item);
         return item;
     }
 

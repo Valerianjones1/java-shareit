@@ -6,11 +6,11 @@ import ru.practicum.shareit.item.model.Item;
 import java.util.List;
 
 public interface ItemService {
-    ItemDto saveItem(Item itemDto, Integer userId);
+    ItemDto saveItem(ItemDto itemDto, Integer userId);
 
     ItemDto getItem(Integer itemId);
 
     List<ItemDto> getAllItems();
 
-    ItemDto updateItem(Item itemDto, Integer itemId);
+    ItemDto updateItem(ItemDto itemDto, Integer itemId, Integer userId );
 }
