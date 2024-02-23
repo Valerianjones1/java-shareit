@@ -9,7 +9,7 @@ public interface ItemRepository {
 
     Item get(Integer itemId);
 
-    List<Item> getAll();
+    List<Item> getAll(Integer ownerId);
 
     Item update(Item item);
 }

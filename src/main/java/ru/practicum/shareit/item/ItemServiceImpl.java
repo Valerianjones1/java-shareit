@@ -43,8 +43,8 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public List<ItemDto> getAllItems() {
-        List<Item> items = repo.getAll();
+    public List<ItemDto> getAllItems(Integer ownerId) {
+        List<Item> items = repo.getAll(ownerId);
         return items.stream()
                 .map(item -> mapper.map(item, ItemDto.class))
                 .collect(Collectors.toList());
