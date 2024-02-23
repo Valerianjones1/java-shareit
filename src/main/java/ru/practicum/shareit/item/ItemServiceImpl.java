@@ -5,7 +5,6 @@ import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.NotRightOwnerException;
-import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.UserService;
@@ -52,9 +51,6 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public ItemDto updateItem(ItemDto itemDto, Integer itemId, Integer userId) {
-        if (itemId == null) {
-            throw new ValidationException("Идентификатор вещи равен null");
-        }
         Item oldItem = repo.get(itemId);
         if (oldItem == null) {
             throw new NotFoundException(String.format("Вещь для обновления с идентификатором %s не найдена", itemId));

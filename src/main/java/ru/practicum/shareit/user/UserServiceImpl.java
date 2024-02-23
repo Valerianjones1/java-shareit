@@ -41,9 +41,6 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User updateUser(User user, Integer userId) {
-        if (userId == null) {
-            throw new ValidationException("Идентификатор пользователя равен null");
-        }
         User foundUser = repo.get(userId);
         if (foundUser == null) {
             throw new NotFoundException(String.format("Пользователь для обновления с идентификатором %s не найден", userId));
@@ -66,7 +63,8 @@ public class UserServiceImpl implements UserService {
     private User fillUser(User newUser, User oldUser) {
         if (newUser.getName() == null) {
             newUser.setName(oldUser.getName());
-        } else if (newUser.getEmail() == null) {
+        }
+        if (newUser.getEmail() == null) {
             newUser.setEmail(oldUser.getEmail());
         }
         return newUser;

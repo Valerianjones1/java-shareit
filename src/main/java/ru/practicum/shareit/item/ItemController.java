@@ -1,6 +1,5 @@
 package ru.practicum.shareit.item;
 
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.item.dto.ItemDto;
@@ -25,7 +24,7 @@ public class ItemController {
 
     @PatchMapping("/{itemId}")
     public ItemDto updateItem(@RequestHeader("X-Sharer-User-Id") Integer userId,
-                              @PathVariable @NonNull Integer itemId,
+                              @PathVariable Integer itemId,
                               @RequestBody ItemDto itemDto) {
         return service.updateItem(itemDto, itemId, userId);
     }
