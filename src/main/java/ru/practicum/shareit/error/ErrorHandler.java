@@ -1,12 +1,13 @@
 package ru.practicum.shareit.error;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.tomcat.util.ExceptionUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import ru.practicum.shareit.exception.DataAlreadyExistsException;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.NotRightOwnerException;
 import ru.practicum.shareit.exception.ValidationException;
@@ -19,6 +20,13 @@ public class ErrorHandler {
     public ErrorResponse handleNotFound(final NotFoundException e) {
         log.error("Пользователь или вещь не найдена", e);
         return new ErrorResponse(e.getMessage(), "Пользователь или вещь не найдена");
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ErrorResponse handleDataAlreadyExists(final DataAlreadyExistsException e) {
+        log.error("Пользователь уже существует", e);
+        return new ErrorResponse(e.getMessage(), "Пользователь уже существует");
     }
 
 
@@ -48,7 +56,7 @@ public class ErrorHandler {
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ErrorResponse handleThrowable(final Throwable e) {
         log.error("Произошла непредвиденная ошибка", e);
-        return new ErrorResponse("Произошла непредвиденная ошибка", e.getMessage());
+        return new ErrorResponse("Произошла непредвиденная ошибка", e.getMessage(), ExceptionUtils.getStackTrace(e));
     }
 
 }
