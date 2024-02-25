@@ -5,13 +5,13 @@ import ru.practicum.shareit.item.dto.ItemDto;
 import java.util.List;
 
 public interface ItemService {
-    ItemDto saveItem(ItemDto itemDto, Integer userId);
+    ItemDto create(ItemDto itemDto, int userId);
 
-    ItemDto getItem(Integer itemId);
+    ItemDto get(int itemId);
 
-    List<ItemDto> getAllItems(Integer ownerId);
+    List<ItemDto> getAll(int ownerId);
 
-    ItemDto updateItem(ItemDto itemDto, Integer itemId, Integer userId);
+    ItemDto update(ItemDto itemDto, int userId);
 
-    List<ItemDto> searchItems(String text);
+    List<ItemDto> search(String text);
 }

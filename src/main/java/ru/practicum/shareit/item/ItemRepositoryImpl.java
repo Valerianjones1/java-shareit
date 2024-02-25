@@ -3,10 +3,7 @@ package ru.practicum.shareit.item;
 import org.springframework.stereotype.Repository;
 import ru.practicum.shareit.item.model.Item;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Repository
@@ -26,12 +23,12 @@ public class ItemRepositoryImpl implements ItemRepository {
     }
 
     @Override
-    public Item get(Integer itemId) {
-        return items.get(itemId);
+    public Optional<Item> get(int itemId) {
+        return Optional.ofNullable(items.get(itemId));
     }
 
     @Override
-    public List<Item> getAll(Integer ownerId) {
+    public List<Item> getAll(int ownerId) {
         return items.values().stream()
                 .filter(item -> item.getOwner().equals(ownerId))
                 .collect(Collectors.toList());
@@ -44,12 +41,15 @@ public class ItemRepositoryImpl implements ItemRepository {
     }
 
     @Override
-    public List<Item> searchItems(String text) {
-        return text.isBlank() ? Collections.emptyList() :
-                items.values().stream()
-                .filter(Item::getAvailable)
-                .filter(item -> item.getName().toLowerCase().contains(text.toLowerCase())
-                        || item.getDescription().toLowerCase().contains(text.toLowerCase()))
+    public List<Item> search(String text) {
+        if (text.isBlank()) {
+            return Collections.emptyList();
+        }
+
+        return items.values()
+                .stream()
+                .filter(item -> item.getAvailable() && (item.getName().toLowerCase().contains(text.toLowerCase())
+                        || item.getDescription().toLowerCase().contains(text.toLowerCase())))
                 .collect(Collectors.toList());
     }
 
