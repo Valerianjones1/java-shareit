@@ -12,15 +12,16 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ItemController {
     private final ItemService service;
+    private static final String CUSTOM_USER_ID_HEADER = "X-Sharer-User-Id";
 
     @PostMapping
-    public ItemDto saveItem(@RequestHeader("X-Sharer-User-Id") Integer userId,
+    public ItemDto saveItem(@RequestHeader(CUSTOM_USER_ID_HEADER) Integer userId,
                             @Valid @RequestBody ItemDto itemDto) {
         return service.saveItem(itemDto, userId);
     }
 
     @PatchMapping("/{itemId}")
-    public ItemDto updateItem(@RequestHeader("X-Sharer-User-Id") Integer userId,
+    public ItemDto updateItem(@RequestHeader(CUSTOM_USER_ID_HEADER) Integer userId,
                               @PathVariable Integer itemId,
                               @RequestBody ItemDto itemDto) {
         return service.updateItem(itemDto, itemId, userId);
@@ -32,7 +33,7 @@ public class ItemController {
     }
 
     @GetMapping
-    public List<ItemDto> getAllItemsOfOwner(@RequestHeader("X-Sharer-User-Id") Integer ownerId) {
+    public List<ItemDto> getAllItemsOfOwner(@RequestHeader(CUSTOM_USER_ID_HEADER) Integer ownerId) {
         return service.getAllItems(ownerId);
     }
 
