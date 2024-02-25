@@ -2,10 +2,7 @@ package ru.practicum.shareit.user;
 
 import org.springframework.stereotype.Repository;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Repository
 public class UserRepositoryImpl implements UserRepository {
@@ -25,12 +22,12 @@ public class UserRepositoryImpl implements UserRepository {
     }
 
     @Override
-    public User get(Integer id) {
-        return users.get(id);
+    public Optional<User> get(int id) {
+        return Optional.ofNullable(users.get(id));
     }
 
     @Override
-    public void remove(Integer id) {
+    public void remove(int id) {
         users.remove(id);
     }
 
