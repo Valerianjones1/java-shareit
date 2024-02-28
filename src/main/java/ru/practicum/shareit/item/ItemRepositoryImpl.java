@@ -10,15 +10,18 @@ import java.util.stream.Collectors;
 public class ItemRepositoryImpl implements ItemRepository {
 
     private final Map<Integer, Item> items = new HashMap<>();
-
+    private final Map<Integer, Map<Integer, Item>> owners = new HashMap<>();
     private Integer idCounter = 0;
 
 
     @Override
-    public Item save(Item item) {
+    public Item create(Item item) {
         Integer id = getId();
         item.setId(id);
         items.put(id, item);
+        owners.computeIfAbsent(item.getOwner().getId(), k -> new HashMap<>())
+                .put(id, item);
+
         return item;
     }
 
@@ -29,14 +32,15 @@ public class ItemRepositoryImpl implements ItemRepository {
 
     @Override
     public List<Item> getAll(int ownerId) {
-        return items.values().stream()
-                .filter(item -> item.getOwner().equals(ownerId))
-                .collect(Collectors.toList());
+        return new ArrayList<>(owners.getOrDefault(ownerId, Collections.emptyMap())
+                .values());
     }
 
     @Override
     public Item update(Item item) {
         items.put(item.getId(), item);
+        owners.getOrDefault(item.getOwner().getId(), Collections.emptyMap())
+                .put(item.getId(), item);
         return item;
     }
 
@@ -56,5 +60,4 @@ public class ItemRepositoryImpl implements ItemRepository {
     private Integer getId() {
         return ++idCounter;
     }
-
 }

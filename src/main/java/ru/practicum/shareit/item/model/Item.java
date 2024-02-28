@@ -1,10 +1,7 @@
 package ru.practicum.shareit.item.model;
 
 import lombok.Data;
-
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Size;
+import ru.practicum.shareit.user.User;
 
 @Data
 public class Item {
@@ -16,7 +13,5 @@ public class Item {
 
     private Boolean available;
 
-    private Integer owner;
-
-    private Integer request;
+    private User owner;
 }

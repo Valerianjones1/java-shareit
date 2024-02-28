@@ -7,6 +7,7 @@ import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.NotRightOwnerException;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.model.Item;
+import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserService;
 
 import java.util.List;
@@ -23,12 +24,13 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public ItemDto create(ItemDto itemDto, int userId) {
-        if (!isUserExists(userId)) {
-            throw new NotFoundException(String.format("Пользователь с идентификатором %s не найден", userId));
-        }
+        checkIfUserExists(userId);
         Item item = mapper.map(itemDto, Item.class);
-        item.setOwner(userId);
-        Item savedItem = repo.save(item);
+
+        User owner = mapper.map(userService.get(userId), User.class);
+        item.setOwner(owner);
+
+        Item savedItem = repo.create(item);
         return mapper.map(savedItem, ItemDto.class);
     }
 
@@ -53,11 +55,16 @@ public class ItemServiceImpl implements ItemService {
         Item oldItem = repo.get(itemDto.getId())
                 .orElseThrow(() -> new NotFoundException(
                         String.format("Вещь для обновления с идентификатором %s не найдена", itemDto.getId())));
-        if (!oldItem.getOwner().equals(userId)) {
+
+        User user = mapper.map(userService.get(userId), User.class);
+        if (!oldItem.getOwner().equals(user)) {
             throw new NotRightOwnerException("Вещь может редактировать только владелец");
         }
+
         Item item = mapper.map(itemDto, Item.class);
-        Item updatedItem = repo.update(fillItem(item, oldItem));
+        Item updatedItem = fillItem(item, oldItem);
+
+        repo.update(updatedItem);
         return mapper.map(updatedItem, ItemDto.class);
     }
 
@@ -69,31 +76,23 @@ public class ItemServiceImpl implements ItemService {
                 .collect(Collectors.toList());
     }
 
-    private boolean isUserExists(Integer userId) {
-        try {
-            userService.get(userId);
-            return true;
-        } catch (NotFoundException e) {
-            return false;
-        }
+    private void checkIfUserExists(Integer userId) {
+        userService.get(userId);
     }
 
     private Item fillItem(Item newItem, Item oldItem) {
-        if (newItem.getName() == null) {
-            newItem.setName(oldItem.getName());
+        if (newItem.getName() != null) {
+            oldItem.setName(newItem.getName());
         }
-        if (newItem.getDescription() == null) {
-            newItem.setDescription(oldItem.getDescription());
+        if (newItem.getDescription() != null) {
+            oldItem.setDescription(newItem.getDescription());
         }
-        if (newItem.getAvailable() == null) {
-            newItem.setAvailable(oldItem.getAvailable());
+        if (newItem.getAvailable() != null) {
+            oldItem.setAvailable(newItem.getAvailable());
         }
-        if (newItem.getOwner() == null) {
-            newItem.setOwner(oldItem.getOwner());
+        if (newItem.getOwner() != null) {
+            oldItem.setOwner(newItem.getOwner());
         }
-        if (newItem.getRequest() == null) {
-            newItem.setRequest(oldItem.getRequest());
-        }
-        return newItem;
+        return oldItem;
     }
 }

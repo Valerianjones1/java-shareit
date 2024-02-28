@@ -15,8 +15,8 @@ public class ItemController {
     private static final String CUSTOM_USER_ID_HEADER = "X-Sharer-User-Id";
 
     @PostMapping
-    public ItemDto saveItem(@RequestHeader(CUSTOM_USER_ID_HEADER) int userId,
-                            @Valid @RequestBody ItemDto itemDto) {
+    public ItemDto createItem(@RequestHeader(CUSTOM_USER_ID_HEADER) int userId,
+                              @Valid @RequestBody ItemDto itemDto) {
         return service.create(itemDto, userId);
     }
 
