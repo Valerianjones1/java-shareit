@@ -5,6 +5,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.user.dto.UserDto;
+import ru.practicum.shareit.user.dto.UserUpdateDto;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -43,7 +44,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserDto update(UserDto userDto) {
+    public UserDto update(UserUpdateDto userDto) {
         User user = mapper.map(userDto, User.class);
         User foundUser = repo.get(user.getId())
                 .orElseThrow(() -> new NotFoundException(

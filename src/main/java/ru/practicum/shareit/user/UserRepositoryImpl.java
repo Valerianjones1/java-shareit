@@ -2,7 +2,6 @@ package ru.practicum.shareit.user;
 
 import org.springframework.stereotype.Repository;
 import ru.practicum.shareit.exception.DataAlreadyExistsException;
-import ru.practicum.shareit.exception.NotFoundException;
 
 import java.util.*;
 
@@ -33,10 +32,10 @@ public class UserRepositoryImpl implements UserRepository {
 
     @Override
     public void remove(int id) {
-        User userToDelete = get(id)
-                .orElseThrow(() -> new NotFoundException(
-                        String.format("Пользователь для обновления с идентификатором %s не найден", id)));
-        emails.remove(userToDelete.getEmail());
+        User userToDelete = users.get(id);
+        if (userToDelete != null) {
+            emails.remove(userToDelete.getEmail());
+        }
         users.remove(id);
     }
 

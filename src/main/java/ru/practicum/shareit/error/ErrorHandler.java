@@ -31,7 +31,7 @@ public class ErrorHandler {
 
 
     @ExceptionHandler
-    @ResponseStatus(HttpStatus.CONFLICT)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handleValidation(final ValidationException e) {
         log.error("Ошибка с валидацией", e);
         return new ErrorResponse(e.getMessage(), "Ошибка с валидацией");
