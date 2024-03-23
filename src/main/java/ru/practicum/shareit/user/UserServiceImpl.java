@@ -18,7 +18,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<UserDto> getAll() {
-        return repo.getAll().stream()
+        return repo.findAll().stream()
                 .map(user -> mapper.map(user, UserDto.class))
                 .collect(Collectors.toList());
     }
@@ -26,34 +26,33 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserDto create(UserDto userDto) {
         User user = mapper.map(userDto, User.class);
-        User savedUser = repo.create(user);
+        User savedUser = repo.save(user);
         return mapper.map(savedUser, UserDto.class);
     }
 
     @Override
-    public UserDto get(int id) {
-        User user = repo.get(id)
+    public UserDto get(long id) {
+        User user = repo.findById(id)
                 .orElseThrow(() -> new NotFoundException(
                         String.format("Пользователь с идентификатором %s не найден", id)));
         return mapper.map(user, UserDto.class);
     }
 
     @Override
-    public void remove(int id) {
-        repo.remove(id);
+    public void remove(long id) {
+        repo.deleteById(id);
     }
 
     @Override
     public UserDto update(UserUpdateDto userDto) {
         User user = mapper.map(userDto, User.class);
-        User foundUser = repo.get(user.getId())
+        User foundUser = repo.findById(user.getId())
                 .orElseThrow(() -> new NotFoundException(
                         String.format("Пользователь для обновления с идентификатором %s не найден",
                                 user.getId())));
 
-        String oldEmail = foundUser.getEmail();
         User updatedUser = fillUser(user, foundUser);
-        repo.update(updatedUser, oldEmail);
+        repo.save(updatedUser);
         return mapper.map(updatedUser, UserDto.class);
     }
 
