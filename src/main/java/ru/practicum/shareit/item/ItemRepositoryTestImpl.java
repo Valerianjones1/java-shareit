@@ -6,7 +6,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Repository
-public class ItemRepositoryImpl implements ItemRepository {
+public class ItemRepositoryTestImpl implements ItemRepositoryTest {
 
     private final Map<Long, Item> items = new HashMap<>();
     private final Map<Long, Map<Long, Item>> owners = new HashMap<>();

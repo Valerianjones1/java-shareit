@@ -6,10 +6,10 @@ import org.springframework.stereotype.Service;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.NotRightOwnerException;
 import ru.practicum.shareit.item.dto.ItemDto;
-import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserService;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,29 +30,29 @@ public class ItemServiceImpl implements ItemService {
         User owner = mapper.map(userService.get(userId), User.class);
         item.setOwner(owner);
 
-        Item savedItem = repo.create(item);
+        Item savedItem = repo.save(item);
         return mapper.map(savedItem, ItemDto.class);
     }
 
     @Override
-    public ItemDto get(int itemId) {
-        Item item = repo.get(itemId)
+    public ItemDto get(long itemId) {
+        Item item = repo.findById(itemId)
                 .orElseThrow(() -> new NotFoundException(
                         String.format("Вещь с идентификатором %s не найдена", itemId)));
         return mapper.map(item, ItemDto.class);
     }
 
     @Override
-    public List<ItemDto> getAll(int ownerId) {
-        List<Item> items = repo.getAll(ownerId);
+    public List<ItemDto> getAll(long ownerId) {
+        List<Item> items = repo.findAllByOwnerId(ownerId);
         return items.stream()
                 .map(item -> mapper.map(item, ItemDto.class))
                 .collect(Collectors.toList());
     }
 
     @Override
-    public ItemDto update(ItemDto itemDto, int userId) {
-        Item oldItem = repo.get(itemDto.getId())
+    public ItemDto update(ItemDto itemDto, long userId) {
+        Item oldItem = repo.findById(itemDto.getId())
                 .orElseThrow(() -> new NotFoundException(
                         String.format("Вещь для обновления с идентификатором %s не найдена", itemDto.getId())));
 
@@ -64,13 +64,16 @@ public class ItemServiceImpl implements ItemService {
         Item item = mapper.map(itemDto, Item.class);
         Item updatedItem = fillItem(item, oldItem);
 
-        repo.update(updatedItem);
+        repo.save(updatedItem);
         return mapper.map(updatedItem, ItemDto.class);
     }
 
     @Override
     public List<ItemDto> search(String text) {
-        List<Item> searchedItems = repo.search(text);
+        if (text.isBlank()) {
+            return Collections.emptyList();
+        }
+        List<Item> searchedItems = repo.findByNameOrDescriptionContainingIgnoreCaseAndAvailableTrue(text, text);
         return searchedItems.stream()
                 .map(item -> mapper.map(item, ItemDto.class))
                 .collect(Collectors.toList());

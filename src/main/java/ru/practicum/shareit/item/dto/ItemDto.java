@@ -8,7 +8,7 @@ import javax.validation.constraints.Size;
 
 @Data
 public class ItemDto {
-    private Integer id;
+    private Long id;
 
     @NotNull
     @NotBlank

@@ -3,7 +3,7 @@ package ru.practicum.shareit.item;
 import java.util.List;
 import java.util.Optional;
 
-public interface ItemRepository {
+public interface ItemRepositoryTest {
     Item create(Item item);
 
     Optional<Item> get(int itemId);

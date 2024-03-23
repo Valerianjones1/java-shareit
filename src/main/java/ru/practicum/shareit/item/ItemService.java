@@ -7,11 +7,11 @@ import java.util.List;
 public interface ItemService {
     ItemDto create(ItemDto itemDto, int userId);
 
-    ItemDto get(int itemId);
+    ItemDto get(long itemId);
 
-    List<ItemDto> getAll(int ownerId);
+    List<ItemDto> getAll(long ownerId);
 
-    ItemDto update(ItemDto itemDto, int userId);
+    ItemDto update(ItemDto itemDto, long userId);
 
     List<ItemDto> search(String text);
 }
