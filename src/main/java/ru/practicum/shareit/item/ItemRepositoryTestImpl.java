@@ -1,7 +1,6 @@
 package ru.practicum.shareit.item;
 
 import org.springframework.stereotype.Repository;
-import ru.practicum.shareit.item.model.Item;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -9,14 +8,14 @@ import java.util.stream.Collectors;
 @Repository
 public class ItemRepositoryImpl implements ItemRepository {
 
-    private final Map<Integer, Item> items = new HashMap<>();
-    private final Map<Integer, Map<Integer, Item>> owners = new HashMap<>();
-    private Integer idCounter = 0;
+    private final Map<Long, Item> items = new HashMap<>();
+    private final Map<Long, Map<Long, Item>> owners = new HashMap<>();
+    private Long idCounter = 0L;
 
 
     @Override
     public Item create(Item item) {
-        Integer id = getId();
+        Long id = getId();
         item.setId(id);
         items.put(id, item);
         owners.computeIfAbsent(item.getOwner().getId(), k -> new HashMap<>())
@@ -57,7 +56,7 @@ public class ItemRepositoryImpl implements ItemRepository {
                 .collect(Collectors.toList());
     }
 
-    private Integer getId() {
+    private Long getId() {
         return ++idCounter;
     }
 }
