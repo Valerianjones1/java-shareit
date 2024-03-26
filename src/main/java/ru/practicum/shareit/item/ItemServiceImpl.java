@@ -23,7 +23,7 @@ public class ItemServiceImpl implements ItemService {
     private final ModelMapper mapper;
 
     @Override
-    public ItemDto create(ItemDto itemDto, int userId) {
+    public ItemDto create(ItemDto itemDto, long userId) {
         checkIfUserExists(userId);
         Item item = mapper.map(itemDto, Item.class);
 
@@ -79,7 +79,7 @@ public class ItemServiceImpl implements ItemService {
                 .collect(Collectors.toList());
     }
 
-    private void checkIfUserExists(Integer userId) {
+    private void checkIfUserExists(long userId) {
         userService.get(userId);
     }
 
