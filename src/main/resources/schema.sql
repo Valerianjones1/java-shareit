@@ -1,4 +1,4 @@
-DROP TABLE IF EXISTS users, items, bookings;
+DROP TABLE IF EXISTS users, items, bookings, comments, requests;
 CREATE TABLE IF NOT EXISTS users
 (
     id    BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -24,4 +24,21 @@ CREATE TABLE IF NOT EXISTS bookings
     end_date   TIMESTAMP WITHOUT TIME ZONE,
     CONSTRAINT fk_bookings_to_users FOREIGN KEY (booker_id) references users (id),
     CONSTRAINT fk_bookings_to_items FOREIGN KEY (item_id) references items (id)
+);
+CREATE TABLE IF NOT EXISTS comments
+(
+    id        BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    author_id BIGINT,
+    item_id   BIGINT,
+    text      varchar(200),
+    CONSTRAINT fk_comments_to_users FOREIGN KEY (author_id) references users (id),
+    CONSTRAINT fk_comments_to_items FOREIGN KEY (item_id) references items (id)
+);
+
+CREATE TABLE IF NOT EXISTS requests
+(
+    id           BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    requestor_id BIGINT,
+    description  varchar(200),
+    CONSTRAINT fk_requests_to_users FOREIGN KEY (requestor_id) references users (id)
 );
