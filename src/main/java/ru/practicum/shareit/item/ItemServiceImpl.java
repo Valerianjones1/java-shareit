@@ -1,16 +1,26 @@
 package ru.practicum.shareit.item;
 
 import lombok.RequiredArgsConstructor;
-import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
+import ru.practicum.shareit.booking.Booking;
+import ru.practicum.shareit.booking.BookingRepository;
+import ru.practicum.shareit.booking.BookingState;
+import ru.practicum.shareit.booking.dto.BookingItemDto;
+import ru.practicum.shareit.booking.mapper.BookingMapper;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.NotRightOwnerException;
 import ru.practicum.shareit.item.dto.ItemDto;
+import ru.practicum.shareit.item.dto.ItemResponseDto;
+import ru.practicum.shareit.item.mapper.ItemMapper;
 import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserService;
+import ru.practicum.shareit.user.mapper.UserMapper;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -20,34 +30,48 @@ public class ItemServiceImpl implements ItemService {
 
     private final UserService userService;
 
-    private final ModelMapper mapper;
+    private final BookingRepository bookingRepo;
 
     @Override
     public ItemDto create(ItemDto itemDto, long userId) {
         checkIfUserExists(userId);
-        Item item = mapper.map(itemDto, Item.class);
 
-        User owner = mapper.map(userService.get(userId), User.class);
-        item.setOwner(owner);
+        User owner = UserMapper.mapToUser(userService.get(userId));
+        Item item = ItemMapper.mapToItem(itemDto, owner);
 
-        Item savedItem = repo.save(item);
-        return mapper.map(savedItem, ItemDto.class);
+        return ItemMapper.mapToItemDto(repo.save(item));
     }
 
     @Override
-    public ItemDto get(long itemId) {
+    public ItemResponseDto get(long itemId, long userId) {
         Item item = repo.findById(itemId)
                 .orElseThrow(() -> new NotFoundException(
                         String.format("Вещь с идентификатором %s не найдена", itemId)));
-        return mapper.map(item, ItemDto.class);
+
+        ItemResponseDto itemResponseDto = ItemMapper.mapToItemResponseDto(item);
+        List<Booking> itemBookings = bookingRepo.findAllByItemId(itemId);
+
+        if (userId == item.getOwner().getId()) {
+            itemResponseDto.setLastBooking(getLastBooking(itemBookings));
+            itemResponseDto.setNextBooking(getNextBooking(itemBookings));
+        }
+
+        return itemResponseDto;
     }
 
     @Override
-    public List<ItemDto> getAll(long ownerId) {
-        List<Item> items = repo.findAllByOwnerId(ownerId);
-        return items.stream()
-                .map(item -> mapper.map(item, ItemDto.class))
+    public List<ItemResponseDto> getAll(long ownerId) {
+        List<Item> items = repo.findAllByOwnerIdOrderByIdAsc(ownerId);
+        List<ItemResponseDto> itemResponseDtos = items.stream()
+                .map(ItemMapper::mapToItemResponseDto)
                 .collect(Collectors.toList());
+
+        itemResponseDtos.forEach(item -> {
+            long itemId = item.getId();
+            item.setLastBooking(getLastBooking(bookingRepo.findAllByItemId(itemId)));
+            item.setNextBooking(getNextBooking(bookingRepo.findAllByItemId(itemId)));
+        });
+        return itemResponseDtos;
     }
 
     @Override
@@ -56,16 +80,15 @@ public class ItemServiceImpl implements ItemService {
                 .orElseThrow(() -> new NotFoundException(
                         String.format("Вещь для обновления с идентификатором %s не найдена", itemDto.getId())));
 
-        User user = mapper.map(userService.get(userId), User.class);
+        User user = UserMapper.mapToUser(userService.get(userId));
         if (!oldItem.getOwner().equals(user)) {
             throw new NotRightOwnerException("Вещь может редактировать только владелец");
         }
 
-        Item item = mapper.map(itemDto, Item.class);
+        Item item = ItemMapper.mapToItem(itemDto);
         Item updatedItem = fillItem(item, oldItem);
 
-        repo.save(updatedItem);
-        return mapper.map(updatedItem, ItemDto.class);
+        return ItemMapper.mapToItemDto(repo.save(updatedItem));
     }
 
     @Override
@@ -75,7 +98,7 @@ public class ItemServiceImpl implements ItemService {
         }
         List<Item> searchedItems = repo.findByNameOrDescriptionContainingIgnoreCaseAndAvailableTrue(text, text);
         return searchedItems.stream()
-                .map(item -> mapper.map(item, ItemDto.class))
+                .map(ItemMapper::mapToItemDto)
                 .collect(Collectors.toList());
     }
 
@@ -97,5 +120,26 @@ public class ItemServiceImpl implements ItemService {
             oldItem.setOwner(newItem.getOwner());
         }
         return oldItem;
+    }
+
+    private BookingItemDto getLastBooking(List<Booking> bookings) {
+        Optional<Booking> lastBooking = bookings
+                .stream()
+                .filter(booking -> booking.getStatus().equals(BookingState.APPROVED)
+                        && booking.getStartDate().isBefore(LocalDateTime.now()))
+                .max(Comparator.comparing(Booking::getEndDate));
+
+
+        return lastBooking.map(BookingMapper::mapToBookingItemDto).orElse(null);
+    }
+
+    private BookingItemDto getNextBooking(List<Booking> bookings) {
+        Optional<Booking> nextBooking = bookings
+                .stream()
+                .filter(booking -> booking.getStatus().equals(BookingState.APPROVED)
+                        && booking.getStartDate().isAfter(LocalDateTime.now())).
+                min(Comparator.comparing(Booking::getStartDate));
+
+        return nextBooking.map(BookingMapper::mapToBookingItemDto).orElse(null);
     }
 }
