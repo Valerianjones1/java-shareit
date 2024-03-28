@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @Data
 @Date
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-public class BookingUpdateDto {
+public class BookingResponseDto {
     private Long id;
 
     private LocalDateTime start;

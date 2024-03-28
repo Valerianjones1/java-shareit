@@ -2,15 +2,15 @@ package ru.practicum.shareit.booking;
 
 import com.google.common.base.Enums;
 import lombok.RequiredArgsConstructor;
-import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.booking.dto.BookingDto;
-import ru.practicum.shareit.booking.dto.BookingUpdateDto;
+import ru.practicum.shareit.booking.dto.BookingResponseDto;
+import ru.practicum.shareit.booking.mapper.BookingMapper;
 import ru.practicum.shareit.exception.*;
 import ru.practicum.shareit.item.Item;
 import ru.practicum.shareit.item.ItemRepository;
-import ru.practicum.shareit.item.ItemService;
 import ru.practicum.shareit.user.User;
+import ru.practicum.shareit.user.UserRepository;
 import ru.practicum.shareit.user.UserService;
 
 import java.util.List;
@@ -21,38 +21,35 @@ import java.util.stream.Collectors;
 public class BookingServiceImpl implements BookingService {
     private final BookingRepository repo;
     private final UserService userService;
+    private final UserRepository userRepo;
     private final ItemRepository itemRepo;
-    private final ModelMapper mapper;
-
 
     @Override
-    public BookingUpdateDto create(BookingDto bookingDto, long userId) {
+    public BookingResponseDto create(BookingDto bookingDto, long userId) {
         checkIfUserExists(userId);
 
-        Booking booking = mapper.map(bookingDto, Booking.class);
-
-        User booker = mapper.map(userService.get(userId), User.class);
+        User booker = userRepo.findById(userId)
+                .orElseThrow(() -> new NotFoundException(
+                        String.format("Пользователь с идентификатором %s не найден", userId)));
         Item item = itemRepo.findById(bookingDto.getItemId())
                 .orElseThrow(() -> new NotFoundException(
                         String.format("Вещь с идентификатором %s не найдена", bookingDto.getItemId())));
 
-        booking.setBooker(booker);
-        booking.setItem(item);
+        Booking booking = BookingMapper.mapToBooking(bookingDto, booker, item);
 
         if (!booking.getItem().getAvailable()) {
             throw new NotAvailableItemException("Запрещено бронировать недоступную вещь");
         }
 
-        long ownerId = item.getOwner().getId();
-        if (ownerId == userId) {
+        if (item.getOwner().getId() == userId) {
             throw new NotRightBookerOrOwnerException("Владелец не может забронировать собственную вещь");
         }
 
-        return mapper.map(repo.save(booking), BookingUpdateDto.class);
+        return BookingMapper.mapToBookingResponseDto(repo.save(booking));
     }
 
     @Override
-    public BookingUpdateDto updateStatus(long bookingId, long userId, Boolean approved) {
+    public BookingResponseDto updateStatus(long bookingId, long userId, Boolean approved) {
         Booking booking = repo.findById(bookingId)
                 .orElseThrow(() -> new NotFoundException(
                         String.format("Бронь с идентификатором %s не найдена", bookingId)));
@@ -61,19 +58,17 @@ public class BookingServiceImpl implements BookingService {
             throw new AlreadyApprovedException("Бронь уже подтверждена");
         }
 
-        long ownerId = booking.getItem().getOwner().getId();
-
-        if (ownerId != userId) {
+        if (booking.getItem().getOwner().getId() != userId) {
             throw new NotRightBookerOrOwnerException("Подтвердить запрос на бронирование может только владелец вещи");
         }
 
         booking.setStatus(approved ? BookingState.APPROVED : BookingState.REJECTED);
 
-        return mapper.map(repo.save(booking), BookingUpdateDto.class);
+        return BookingMapper.mapToBookingResponseDto(repo.save(booking));
     }
 
     @Override
-    public BookingUpdateDto get(long bookingId, long userId) {
+    public BookingResponseDto get(long bookingId, long userId) {
         Booking booking = repo.findById(bookingId)
                 .orElseThrow(() -> new NotFoundException(
                         String.format("Бронь с идентификатором %s не найдена", bookingId)));
@@ -85,28 +80,42 @@ public class BookingServiceImpl implements BookingService {
             throw new NotRightBookerOrOwnerException("Получить бронь можно либо владельцу вещи либо автором бронирования");
         }
 
-        return mapper.map(booking, BookingUpdateDto.class);
+        return BookingMapper.mapToBookingResponseDto(booking);
     }
 
     @Override
-    public List<BookingUpdateDto> getAllByUser(long userId, String state) {
+    public List<BookingResponseDto> getAllByUser(long userId, String state) {
         checkIfStateSupports(state);
         checkIfUserExists(userId);
 
-        return repo.findAllByBookerIdOrderByStartDateDesc(userId)
+        if (state.equals("ALL") || state.equals("FUTURE")) {
+            return repo.findAllByBookerIdOrderByStartDateDesc(userId)
+                    .stream()
+                    .map(BookingMapper::mapToBookingResponseDto)
+                    .collect(Collectors.toList());
+        }
+
+        return repo.findAllByBookerIdAndStatusEqualsOrderByStartDateDesc(userId, BookingState.valueOf(state))
                 .stream()
-                .map(booking -> mapper.map(booking, BookingUpdateDto.class))
+                .map(BookingMapper::mapToBookingResponseDto)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List<BookingUpdateDto> getAllByOwnerItems(long userId, String state) {
+    public List<BookingResponseDto> getAllByOwnerItems(long userId, String state) {
         checkIfStateSupports(state);
         checkIfUserExists(userId);
 
-        return repo.findAllByItemOwnerIdOrderByStartDateDesc(userId)
+        if (state.equals("ALL") || state.equals("FUTURE")) {
+            return repo.findAllByItemOwnerIdOrderByStartDateDesc(userId)
+                    .stream()
+                    .map(BookingMapper::mapToBookingResponseDto)
+                    .collect(Collectors.toList());
+        }
+
+        return repo.findAllByItemOwnerIdAndStatusEqualsOrderByStartDateDesc(userId, BookingState.valueOf(state))
                 .stream()
-                .map(booking -> mapper.map(booking, BookingUpdateDto.class))
+                .map(BookingMapper::mapToBookingResponseDto)
                 .collect(Collectors.toList());
     }
 
