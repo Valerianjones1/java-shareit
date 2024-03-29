@@ -2,8 +2,8 @@ package ru.practicum.shareit.item.mapper;
 
 import lombok.Data;
 import ru.practicum.shareit.item.Item;
-import ru.practicum.shareit.item.dto.ItemResponseDto;
 import ru.practicum.shareit.item.dto.ItemDto;
+import ru.practicum.shareit.item.dto.ItemResponseDto;
 import ru.practicum.shareit.user.User;
 
 @Data
@@ -17,6 +17,7 @@ public class ItemMapper {
 
         return itemResponseDto;
     }
+
     public static Item mapToItem(ItemDto itemDto, User owner) {
         Item item = new Item();
         item.setId(itemDto.getId());

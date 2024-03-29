@@ -80,8 +80,8 @@ public class ItemServiceImpl implements ItemService {
             long itemId = item.getId();
             item.setLastBooking(getLastBooking(bookingRepo.findAllByItemId(itemId)));
             item.setNextBooking(getNextBooking(bookingRepo.findAllByItemId(itemId)));
-            item.setComments(commentRepo.findAllByItemId(itemId).
-                    stream()
+            item.setComments(commentRepo.findAllByItemId(itemId)
+                    .stream()
                     .map(CommentMapper::mapToCommentDto)
                     .collect(Collectors.toList()));
         });
@@ -182,8 +182,8 @@ public class ItemServiceImpl implements ItemService {
         Optional<Booking> nextBooking = bookings
                 .stream()
                 .filter(booking -> booking.getStatus().equals(BookingState.APPROVED)
-                        && booking.getStartDate().isAfter(LocalDateTime.now())).
-                min(Comparator.comparing(Booking::getStartDate));
+                        && booking.getStartDate().isAfter(LocalDateTime.now()))
+                .min(Comparator.comparing(Booking::getStartDate));
 
         return nextBooking.map(BookingMapper::mapToBookingItemDto).orElse(null);
     }
