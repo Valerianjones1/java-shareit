@@ -1,7 +1,5 @@
 package ru.practicum.shareit.booking;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import ru.practicum.shareit.item.Item;
 import ru.practicum.shareit.user.User;

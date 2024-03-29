@@ -46,8 +46,7 @@ public class UserServiceImpl implements UserService {
         User user = UserMapper.mapToUser(userDto);
         User foundUser = repo.findById(user.getId())
                 .orElseThrow(() -> new NotFoundException(
-                        String.format("Пользователь для обновления с идентификатором %s не найден",
-                                user.getId())));
+                        String.format("Пользователь для обновления с идентификатором %s не найден", user.getId())));
 
         User updatedUser = fillUser(user, foundUser);
         return UserMapper.mapToUserDto(repo.save(updatedUser));

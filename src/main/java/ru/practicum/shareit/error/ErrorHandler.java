@@ -57,6 +57,13 @@ public class ErrorHandler {
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse handleNotEndedBooking(final NotEndedBookingException e) {
+        log.error("Комментировать можно только брони у которых срок закончен", e);
+        return new ErrorResponse(e.getMessage(), "Комментировать можно только брони у которых срок закончен");
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handleNotAvailableItem(final NotAvailableItemException e) {
         log.error("Запрещено бронировать недоступную вещь", e);
         return new ErrorResponse(e.getMessage(), "Запрещено бронировать недоступную вещь");

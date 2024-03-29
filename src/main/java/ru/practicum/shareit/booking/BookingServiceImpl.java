@@ -13,6 +13,7 @@ import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserRepository;
 import ru.practicum.shareit.user.UserService;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -88,15 +89,9 @@ public class BookingServiceImpl implements BookingService {
         checkIfStateSupports(state);
         checkIfUserExists(userId);
 
-        if (state.equals("ALL") || state.equals("FUTURE")) {
-            return repo.findAllByBookerIdOrderByStartDateDesc(userId)
-                    .stream()
-                    .map(BookingMapper::mapToBookingResponseDto)
-                    .collect(Collectors.toList());
-        }
-
-        return repo.findAllByBookerIdAndStatusEqualsOrderByStartDateDesc(userId, BookingState.valueOf(state))
+        return repo.findAllByBookerIdOrderByStartDateDesc(userId)
                 .stream()
+                .filter(booking -> getConditionByState(ParamState.valueOf(state), booking))
                 .map(BookingMapper::mapToBookingResponseDto)
                 .collect(Collectors.toList());
     }
@@ -106,15 +101,9 @@ public class BookingServiceImpl implements BookingService {
         checkIfStateSupports(state);
         checkIfUserExists(userId);
 
-        if (state.equals("ALL") || state.equals("FUTURE")) {
-            return repo.findAllByItemOwnerIdOrderByStartDateDesc(userId)
-                    .stream()
-                    .map(BookingMapper::mapToBookingResponseDto)
-                    .collect(Collectors.toList());
-        }
-
-        return repo.findAllByItemOwnerIdAndStatusEqualsOrderByStartDateDesc(userId, BookingState.valueOf(state))
+        return repo.findAllByItemOwnerIdOrderByStartDateDesc(userId)
                 .stream()
+                .filter(booking -> getConditionByState(ParamState.valueOf(state), booking))
                 .map(BookingMapper::mapToBookingResponseDto)
                 .collect(Collectors.toList());
     }
@@ -127,5 +116,32 @@ public class BookingServiceImpl implements BookingService {
         if (!Enums.getIfPresent(ParamState.class, state).isPresent()) {
             throw new NotSupportedStateException("Unknown state: UNSUPPORTED_STATUS");
         }
+    }
+
+    private boolean getConditionByState(ParamState state, Booking booking) {
+        boolean condition;
+        switch (state) {
+            case PAST:
+                condition = booking.getEndDate().isBefore(LocalDateTime.now());
+                break;
+            case CURRENT:
+                condition = booking.getEndDate().isAfter(LocalDateTime.now())
+                        && booking.getStartDate().isBefore(LocalDateTime.now());
+                break;
+            case REJECTED:
+                condition = booking.getStatus().equals(BookingState.REJECTED);
+                break;
+            case WAITING:
+                condition = booking.getStatus().equals(BookingState.WAITING);
+                break;
+            case FUTURE:
+                condition = booking.getStartDate().isAfter(LocalDateTime.now())
+                        && booking.getEndDate().isAfter(LocalDateTime.now());
+                break;
+            default:
+                condition = booking != null;
+                break;
+        }
+        return condition;
     }
 }

@@ -7,10 +7,14 @@ import ru.practicum.shareit.booking.BookingRepository;
 import ru.practicum.shareit.booking.BookingState;
 import ru.practicum.shareit.booking.dto.BookingItemDto;
 import ru.practicum.shareit.booking.mapper.BookingMapper;
+import ru.practicum.shareit.exception.NotEndedBookingException;
 import ru.practicum.shareit.exception.NotFoundException;
+import ru.practicum.shareit.exception.NotRightBookerOrOwnerException;
 import ru.practicum.shareit.exception.NotRightOwnerException;
+import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ItemResponseDto;
+import ru.practicum.shareit.item.mapper.CommentMapper;
 import ru.practicum.shareit.item.mapper.ItemMapper;
 import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserService;
@@ -31,6 +35,8 @@ public class ItemServiceImpl implements ItemService {
     private final UserService userService;
 
     private final BookingRepository bookingRepo;
+
+    private final CommentRepository commentRepo;
 
     @Override
     public ItemDto create(ItemDto itemDto, long userId) {
@@ -55,6 +61,10 @@ public class ItemServiceImpl implements ItemService {
             itemResponseDto.setLastBooking(getLastBooking(itemBookings));
             itemResponseDto.setNextBooking(getNextBooking(itemBookings));
         }
+        itemResponseDto.setComments(commentRepo.findAllByItemId(itemId)
+                .stream()
+                .map(CommentMapper::mapToCommentDto)
+                .collect(Collectors.toList()));
 
         return itemResponseDto;
     }
@@ -70,6 +80,10 @@ public class ItemServiceImpl implements ItemService {
             long itemId = item.getId();
             item.setLastBooking(getLastBooking(bookingRepo.findAllByItemId(itemId)));
             item.setNextBooking(getNextBooking(bookingRepo.findAllByItemId(itemId)));
+            item.setComments(commentRepo.findAllByItemId(itemId).
+                    stream()
+                    .map(CommentMapper::mapToCommentDto)
+                    .collect(Collectors.toList()));
         });
         return itemResponseDtos;
     }
@@ -102,6 +116,26 @@ public class ItemServiceImpl implements ItemService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public CommentDto createComment(Long itemId, CommentDto commentDto, int userId) {
+        Booking booking = getBooking(bookingRepo.findAllByItemIdAndBookerId(itemId, userId));
+
+        if (booking.getBooker().getId() != userId) {
+            throw new NotRightBookerOrOwnerException("Оставлять комментарии может только человек, который бронировал");
+        }
+
+        if (booking.getEndDate().isAfter(LocalDateTime.now())) {
+            throw new NotEndedBookingException("Комментировать можно только брони у которых срок закончен");
+        }
+
+        User author = UserMapper.mapToUser(userService.get(userId));
+        Item item = booking.getItem();
+
+        Comment comment = CommentMapper.mapToComment(commentDto, author, item);
+
+        return CommentMapper.mapToCommentDto(commentRepo.save(comment));
+    }
+
     private void checkIfUserExists(long userId) {
         userService.get(userId);
     }
@@ -120,6 +154,17 @@ public class ItemServiceImpl implements ItemService {
             oldItem.setOwner(newItem.getOwner());
         }
         return oldItem;
+    }
+
+    private Booking getBooking(List<Booking> bookings) {
+        Optional<Booking> lastBooking = bookings
+                .stream()
+                .filter(booking -> booking.getStatus().equals(BookingState.APPROVED)
+                        && booking.getEndDate().isBefore(LocalDateTime.now()))
+                .max(Comparator.comparing(Booking::getEndDate));
+
+        return lastBooking
+                .orElseThrow(() -> new NotEndedBookingException("Срок брони должен быть окончен и статус 'APPROVED'"));
     }
 
     private BookingItemDto getLastBooking(List<Booking> bookings) {
