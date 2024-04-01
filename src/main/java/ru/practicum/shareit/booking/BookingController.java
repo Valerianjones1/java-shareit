@@ -1,9 +1,13 @@
 package ru.practicum.shareit.booking;
 
+import com.google.common.base.Enums;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import ru.practicum.shareit.booking.dto.BookingCreateDto;
 import ru.practicum.shareit.booking.dto.BookingDto;
-import ru.practicum.shareit.booking.dto.BookingResponseDto;
+import ru.practicum.shareit.exception.NotSupportedStateException;
 
 import javax.validation.Valid;
 import java.util.List;
@@ -12,39 +16,54 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(path = "/bookings")
+@Slf4j
 public class BookingController {
     private static final String CUSTOM_USER_ID_HEADER = "X-Sharer-User-Id";
 
     private final BookingService service;
 
-    @PostMapping()
-    public BookingResponseDto createBooking(@RequestHeader(CUSTOM_USER_ID_HEADER) long userId,
-                                            @Valid @RequestBody BookingDto bookingDto) {
-        return service.create(bookingDto, userId);
+    @PostMapping
+    @ResponseStatus(code = HttpStatus.CREATED)
+    public BookingDto createBooking(@RequestHeader(CUSTOM_USER_ID_HEADER) long userId,
+                                    @Valid @RequestBody BookingCreateDto bookingCreateDto) {
+        log.info("Создается бронь " + bookingCreateDto);
+        return service.create(bookingCreateDto, userId);
     }
 
     @PatchMapping("/{bookingId}")
-    public BookingResponseDto updateStatusOfBooking(@PathVariable int bookingId,
-                                                    @RequestHeader(CUSTOM_USER_ID_HEADER) long userId,
-                                                    @RequestParam Boolean approved) {
+    public BookingDto updateStatusOfBooking(@PathVariable long bookingId,
+                                            @RequestHeader(CUSTOM_USER_ID_HEADER) long userId,
+                                            @RequestParam Boolean approved) {
+        log.info(String.format("Обновляется статус брони с идентификатором %s", bookingId));
         return service.updateStatus(bookingId, userId, approved);
     }
 
     @GetMapping("/{bookingId}")
-    public BookingResponseDto getBooking(@PathVariable int bookingId,
-                                         @RequestHeader(CUSTOM_USER_ID_HEADER) int userId) {
+    public BookingDto getBooking(@PathVariable long bookingId,
+                                 @RequestHeader(CUSTOM_USER_ID_HEADER) long userId) {
+        log.info(String.format("Получаем бронь с идентификатором %s", bookingId));
         return service.get(bookingId, userId);
     }
 
     @GetMapping
-    public List<BookingResponseDto> getBookingsOfUser(@RequestHeader(CUSTOM_USER_ID_HEADER) int userId,
-                                                      @RequestParam(defaultValue = "ALL") String state) {
-        return service.getAllByUser(userId, state);
+    public List<BookingDto> getBookingsOfUser(@RequestHeader(CUSTOM_USER_ID_HEADER) long userId,
+                                              @RequestParam(defaultValue = "ALL") String state) {
+        log.info(String.format("Получаем все %s брони пользователя с идентификатором %s", state, userId));
+        checkIfStateSupports(state);
+        return service.getAllByUser(userId, BookingState.valueOf(state));
     }
 
     @GetMapping("/owner")
-    public List<BookingResponseDto> getBookingsOfOwnerItems(@RequestHeader(CUSTOM_USER_ID_HEADER) int userId,
-                                                            @RequestParam(defaultValue = "ALL") String state) {
-        return service.getAllByOwnerItems(userId, state);
+    public List<BookingDto> getBookingsOfOwnerItems(@RequestHeader(CUSTOM_USER_ID_HEADER) long userId,
+                                                    @RequestParam(defaultValue = "ALL") String state) {
+        log.info(String.format("Получаем все %s брони владельца вещей с идентификатором %s", state, userId));
+        checkIfStateSupports(state);
+        return service.getAllByOwnerItems(userId, BookingState.valueOf(state));
+    }
+
+    private void checkIfStateSupports(String state) {
+        if (!Enums.getIfPresent(BookingState.class, state).isPresent()) {
+            throw new NotSupportedStateException("Unknown state: UNSUPPORTED_STATUS");
+        }
     }
 }

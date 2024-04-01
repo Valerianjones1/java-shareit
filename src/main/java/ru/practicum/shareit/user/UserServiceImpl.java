@@ -13,11 +13,11 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
-    private final UserRepository repo;
+    private final UserRepository repository;
 
     @Override
     public List<UserDto> getAll() {
-        return repo.findAll().stream()
+        return repository.findAll().stream()
                 .map(UserMapper::mapToUserDto)
                 .collect(Collectors.toList());
     }
@@ -25,12 +25,12 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserDto create(UserDto userDto) {
         User user = UserMapper.mapToUser(userDto);
-        return UserMapper.mapToUserDto(repo.save(user));
+        return UserMapper.mapToUserDto(repository.save(user));
     }
 
     @Override
     public UserDto get(long id) {
-        User user = repo.findById(id)
+        User user = repository.findById(id)
                 .orElseThrow(() -> new NotFoundException(
                         String.format("Пользователь с идентификатором %s не найден", id)));
         return UserMapper.mapToUserDto(user);
@@ -38,18 +38,18 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void remove(long id) {
-        repo.deleteById(id);
+        repository.deleteById(id);
     }
 
     @Override
     public UserDto update(UserUpdateDto userDto) {
         User user = UserMapper.mapToUser(userDto);
-        User foundUser = repo.findById(user.getId())
+        User foundUser = repository.findById(user.getId())
                 .orElseThrow(() -> new NotFoundException(
                         String.format("Пользователь для обновления с идентификатором %s не найден", user.getId())));
 
         User updatedUser = fillUser(user, foundUser);
-        return UserMapper.mapToUserDto(repo.save(updatedUser));
+        return UserMapper.mapToUserDto(repository.save(updatedUser));
     }
 
     private User fillUser(User newUser, User oldUser) {

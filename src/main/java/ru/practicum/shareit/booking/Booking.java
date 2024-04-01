@@ -1,19 +1,22 @@
 package ru.practicum.shareit.booking;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import ru.practicum.shareit.item.Item;
 import ru.practicum.shareit.user.User;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
 
-import static ru.practicum.shareit.booking.BookingState.WAITING;
+import static ru.practicum.shareit.booking.BookingStatus.WAITING;
 
+@NamedEntityGraph(name = "booking-entity-graph",
+        attributeNodes = {@NamedAttributeNode("booker"), @NamedAttributeNode("item")})
 @Entity
 @Table(name = "bookings")
-@Data
+@Getter
+@Setter
 public class Booking {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -26,7 +29,7 @@ public class Booking {
 
     @Column
     @Enumerated(EnumType.STRING)
-    private BookingState status = WAITING;
+    private BookingStatus status = WAITING;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "booker_id", nullable = false)

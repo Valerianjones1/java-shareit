@@ -1,13 +1,17 @@
 package ru.practicum.shareit.booking.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
+import ru.practicum.shareit.booking.BookingStatus;
+import ru.practicum.shareit.item.dto.ItemDto;
+import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.validation.Date;
 
-import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 
 @Data
 @Date
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class BookingDto {
     private Long id;
 
@@ -15,6 +19,9 @@ public class BookingDto {
 
     private LocalDateTime end;
 
-    @NotNull
-    private Long itemId;
+    private BookingStatus status;
+
+    private UserDto booker;
+
+    private ItemDto item;
 }

@@ -1,24 +1,23 @@
 package ru.practicum.shareit.item;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.booking.Booking;
 import ru.practicum.shareit.booking.BookingRepository;
-import ru.practicum.shareit.booking.BookingState;
+import ru.practicum.shareit.booking.BookingStatus;
 import ru.practicum.shareit.booking.dto.BookingItemDto;
 import ru.practicum.shareit.booking.mapper.BookingMapper;
 import ru.practicum.shareit.exception.NotEndedBookingException;
 import ru.practicum.shareit.exception.NotFoundException;
-import ru.practicum.shareit.exception.NotRightBookerOrOwnerException;
 import ru.practicum.shareit.exception.NotRightOwnerException;
 import ru.practicum.shareit.item.dto.CommentDto;
+import ru.practicum.shareit.item.dto.ItemCreateDto;
 import ru.practicum.shareit.item.dto.ItemDto;
-import ru.practicum.shareit.item.dto.ItemResponseDto;
 import ru.practicum.shareit.item.mapper.CommentMapper;
 import ru.practicum.shareit.item.mapper.ItemMapper;
 import ru.practicum.shareit.user.User;
-import ru.practicum.shareit.user.UserService;
-import ru.practicum.shareit.user.mapper.UserMapper;
+import ru.practicum.shareit.user.UserRepository;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -30,79 +29,83 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class ItemServiceImpl implements ItemService {
-    private final ItemRepository repo;
+    private final ItemRepository repository;
 
-    private final UserService userService;
+    private final UserRepository userRepository;
 
-    private final BookingRepository bookingRepo;
+    private final BookingRepository bookingRepository;
 
-    private final CommentRepository commentRepo;
+    private final CommentRepository commentRepository;
 
     @Override
-    public ItemDto create(ItemDto itemDto, long userId) {
-        checkIfUserExists(userId);
+    public ItemDto create(ItemCreateDto itemCreateDto, long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException(
+                        String.format("Пользователь с идентификатором %s не найден", userId)));
 
-        User owner = UserMapper.mapToUser(userService.get(userId));
-        Item item = ItemMapper.mapToItem(itemDto, owner);
+        Item item = ItemMapper.mapToItem(itemCreateDto, user);
 
-        return ItemMapper.mapToItemDto(repo.save(item));
+        return ItemMapper.mapToItemDto(repository.save(item));
     }
 
     @Override
-    public ItemResponseDto get(long itemId, long userId) {
-        Item item = repo.findById(itemId)
+    public ItemDto get(long itemId, long userId) {
+        Item item = repository.findById(itemId)
                 .orElseThrow(() -> new NotFoundException(
                         String.format("Вещь с идентификатором %s не найдена", itemId)));
 
-        ItemResponseDto itemResponseDto = ItemMapper.mapToItemResponseDto(item);
-        List<Booking> itemBookings = bookingRepo.findAllByItemId(itemId);
+        ItemDto itemDto = ItemMapper.mapToItemDto(item);
+        List<Booking> itemBookings = bookingRepository.findAllByItemId(itemId);
 
         if (userId == item.getOwner().getId()) {
-            itemResponseDto.setLastBooking(getLastBooking(itemBookings));
-            itemResponseDto.setNextBooking(getNextBooking(itemBookings));
+            itemDto.setLastBooking(getLastBooking(itemBookings));
+            itemDto.setNextBooking(getNextBooking(itemBookings));
         }
-        itemResponseDto.setComments(commentRepo.findAllByItemId(itemId)
+        itemDto.setComments(commentRepository.findAllByItemId(itemId)
                 .stream()
                 .map(CommentMapper::mapToCommentDto)
                 .collect(Collectors.toList()));
 
-        return itemResponseDto;
+        return itemDto;
     }
 
     @Override
-    public List<ItemResponseDto> getAll(long ownerId) {
-        List<Item> items = repo.findAllByOwnerIdOrderByIdAsc(ownerId);
-        List<ItemResponseDto> itemResponseDtos = items.stream()
-                .map(ItemMapper::mapToItemResponseDto)
+    public List<ItemDto> getAll(long ownerId) {
+        List<Item> items = repository.findAllByOwnerId(ownerId, Sort.by("id").ascending());
+        List<ItemDto> itemDtos = items.stream()
+                .map(ItemMapper::mapToItemDto)
                 .collect(Collectors.toList());
 
-        itemResponseDtos.forEach(item -> {
+        itemDtos.forEach(item -> {
             long itemId = item.getId();
-            item.setLastBooking(getLastBooking(bookingRepo.findAllByItemId(itemId)));
-            item.setNextBooking(getNextBooking(bookingRepo.findAllByItemId(itemId)));
-            item.setComments(commentRepo.findAllByItemId(itemId)
+            item.setLastBooking(getLastBooking(bookingRepository.findAllByItemId(itemId)));
+            item.setNextBooking(getNextBooking(bookingRepository.findAllByItemId(itemId)));
+            item.setComments(commentRepository.findAllByItemId(itemId)
                     .stream()
                     .map(CommentMapper::mapToCommentDto)
                     .collect(Collectors.toList()));
         });
-        return itemResponseDtos;
+        return itemDtos;
     }
 
     @Override
-    public ItemDto update(ItemDto itemDto, long userId) {
-        Item oldItem = repo.findById(itemDto.getId())
+    public ItemDto update(ItemCreateDto itemCreateDto, long userId) {
+        Item oldItem = repository.findById(itemCreateDto.getId())
                 .orElseThrow(() -> new NotFoundException(
-                        String.format("Вещь для обновления с идентификатором %s не найдена", itemDto.getId())));
+                        String.format("Вещь для обновления с идентификатором %s не найдена", itemCreateDto.getId())));
 
-        User user = UserMapper.mapToUser(userService.get(userId));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException(
+                        String.format("Пользователь с идентификатором %s не найден", userId)));
+
         if (!oldItem.getOwner().equals(user)) {
             throw new NotRightOwnerException("Вещь может редактировать только владелец");
         }
 
-        Item item = ItemMapper.mapToItem(itemDto);
+        Item item = ItemMapper.mapToItem(itemCreateDto);
         Item updatedItem = fillItem(item, oldItem);
 
-        return ItemMapper.mapToItemDto(repo.save(updatedItem));
+        return ItemMapper.mapToItemDto(repository.save(updatedItem));
     }
 
     @Override
@@ -110,34 +113,32 @@ public class ItemServiceImpl implements ItemService {
         if (text.isBlank()) {
             return Collections.emptyList();
         }
-        List<Item> searchedItems = repo.findByNameOrDescriptionContainingIgnoreCaseAndAvailableTrue(text, text);
+        List<Item> searchedItems = repository.findByNameOrDescriptionContainingIgnoreCaseAndAvailableTrue(text, text);
         return searchedItems.stream()
                 .map(ItemMapper::mapToItemDto)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public CommentDto createComment(Long itemId, CommentDto commentDto, int userId) {
-        Booking booking = getBooking(bookingRepo.findAllByItemIdAndBookerId(itemId, userId));
+    public CommentDto createComment(Long itemId, CommentDto commentDto, long userId) {
+        Booking booking = getBooking(bookingRepository.findAllByItemIdAndBookerId(itemId, userId));
 
         if (booking.getBooker().getId() != userId) {
-            throw new NotRightBookerOrOwnerException("Оставлять комментарии может только человек, который бронировал");
+            throw new NotFoundException("Оставлять комментарии может только человек, который бронировал");
         }
 
         if (booking.getEndDate().isAfter(LocalDateTime.now())) {
             throw new NotEndedBookingException("Комментировать можно только брони у которых срок закончен");
         }
 
-        User author = UserMapper.mapToUser(userService.get(userId));
+        User author = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException(
+                        String.format("Пользователь с идентификатором %s не найден", userId)));
         Item item = booking.getItem();
 
         Comment comment = CommentMapper.mapToComment(commentDto, author, item);
 
-        return CommentMapper.mapToCommentDto(commentRepo.save(comment));
-    }
-
-    private void checkIfUserExists(long userId) {
-        userService.get(userId);
+        return CommentMapper.mapToCommentDto(commentRepository.save(comment));
     }
 
     private Item fillItem(Item newItem, Item oldItem) {
@@ -159,7 +160,7 @@ public class ItemServiceImpl implements ItemService {
     private Booking getBooking(List<Booking> bookings) {
         Optional<Booking> lastBooking = bookings
                 .stream()
-                .filter(booking -> booking.getStatus().equals(BookingState.APPROVED)
+                .filter(booking -> booking.getStatus().equals(BookingStatus.APPROVED)
                         && booking.getEndDate().isBefore(LocalDateTime.now()))
                 .max(Comparator.comparing(Booking::getEndDate));
 
@@ -170,7 +171,7 @@ public class ItemServiceImpl implements ItemService {
     private BookingItemDto getLastBooking(List<Booking> bookings) {
         Optional<Booking> lastBooking = bookings
                 .stream()
-                .filter(booking -> booking.getStatus().equals(BookingState.APPROVED)
+                .filter(booking -> booking.getStatus().equals(BookingStatus.APPROVED)
                         && booking.getStartDate().isBefore(LocalDateTime.now()))
                 .max(Comparator.comparing(Booking::getEndDate));
 
@@ -181,7 +182,7 @@ public class ItemServiceImpl implements ItemService {
     private BookingItemDto getNextBooking(List<Booking> bookings) {
         Optional<Booking> nextBooking = bookings
                 .stream()
-                .filter(booking -> booking.getStatus().equals(BookingState.APPROVED)
+                .filter(booking -> booking.getStatus().equals(BookingStatus.APPROVED)
                         && booking.getStartDate().isAfter(LocalDateTime.now()))
                 .min(Comparator.comparing(Booking::getStartDate));
 
