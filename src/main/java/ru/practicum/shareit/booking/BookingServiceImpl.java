@@ -25,6 +25,8 @@ public class BookingServiceImpl implements BookingService {
     private final UserRepository userRepository;
     private final ItemRepository itemRepository;
 
+    private static final Sort SORT = Sort.by("startDate").descending();
+
     @Override
     public BookingDto create(BookingCreateDto bookingCreateDto, long userId) {
         User booker = userRepository.findById(userId)
@@ -86,10 +88,29 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public List<BookingDto> getAllByUser(long userId, BookingState state) {
         checkIfUserExists(userId);
+        List<Booking> bookers;
+        switch (state) {
+            case PAST:
+                bookers = repository.findAllByBookerIdWithPastState(userId, LocalDateTime.now(), SORT);
+                break;
+            case FUTURE:
+                bookers = repository.findAllByBookerIdWithFutureState(userId, LocalDateTime.now(), SORT);
+                break;
+            case CURRENT:
+                bookers = repository.findAllByBookerIdWithCurrentState(userId, LocalDateTime.now(), SORT);
+                break;
+            case REJECTED:
+                bookers = repository.findAllByBookerIdAndStatusEquals(userId, BookingStatus.REJECTED, SORT);
+                break;
+            case WAITING:
+                bookers = repository.findAllByBookerIdAndStatusEquals(userId, BookingStatus.WAITING, SORT);
+                break;
+            default:
+                bookers = repository.findAllByBookerId(userId, SORT);
+                break;
+        }
 
-        return repository.findAllByBookerId(userId, Sort.by("startDate").descending())
-                .stream()
-                .filter(booking -> getConditionByState(state, booking))
+        return bookers.stream()
                 .map(BookingMapper::mapToBookingDto)
                 .collect(Collectors.toList());
     }
@@ -97,10 +118,29 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public List<BookingDto> getAllByOwnerItems(long userId, BookingState state) {
         checkIfUserExists(userId);
+        List<Booking> bookers;
+        switch (state) {
+            case PAST:
+                bookers = repository.findAllByItemOwnerIdWithPastState(userId, LocalDateTime.now(), SORT);
+                break;
+            case FUTURE:
+                bookers = repository.findAllByItemOwnerIdWithFutureState(userId, LocalDateTime.now(), SORT);
+                break;
+            case CURRENT:
+                bookers = repository.findAllByItemOwnerIdWithCurrentState(userId, LocalDateTime.now(), SORT);
+                break;
+            case REJECTED:
+                bookers = repository.findAllByItemOwnerIdAndStatusEquals(userId, BookingStatus.REJECTED, SORT);
+                break;
+            case WAITING:
+                bookers = repository.findAllByItemOwnerIdAndStatusEquals(userId, BookingStatus.WAITING, SORT);
+                break;
+            default:
+                bookers = repository.findAllByItemOwnerId(userId, SORT);
+                break;
+        }
 
-        return repository.findAllByItemOwnerId(userId, Sort.by("startDate").descending())
-                .stream()
-                .filter(booking -> getConditionByState(state, booking))
+        return bookers.stream()
                 .map(BookingMapper::mapToBookingDto)
                 .collect(Collectors.toList());
     }
@@ -109,33 +149,5 @@ public class BookingServiceImpl implements BookingService {
         userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalStateException(
                         String.format("Пользователь с идентификатором %s не найден", userId)));
-    }
-
-
-    private boolean getConditionByState(BookingState state, Booking booking) {
-        boolean condition;
-        switch (state) {
-            case PAST:
-                condition = booking.getEndDate().isBefore(LocalDateTime.now());
-                break;
-            case CURRENT:
-                condition = booking.getEndDate().isAfter(LocalDateTime.now())
-                        && booking.getStartDate().isBefore(LocalDateTime.now());
-                break;
-            case REJECTED:
-                condition = booking.getStatus().equals(BookingStatus.REJECTED);
-                break;
-            case WAITING:
-                condition = booking.getStatus().equals(BookingStatus.WAITING);
-                break;
-            case FUTURE:
-                condition = booking.getStartDate().isAfter(LocalDateTime.now())
-                        && booking.getEndDate().isAfter(LocalDateTime.now());
-                break;
-            default:
-                condition = booking != null;
-                break;
-        }
-        return condition;
     }
 }

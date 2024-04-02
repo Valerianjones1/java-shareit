@@ -21,9 +21,7 @@ import ru.practicum.shareit.user.UserRepository;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -55,11 +53,21 @@ public class ItemServiceImpl implements ItemService {
                         String.format("Вещь с идентификатором %s не найдена", itemId)));
 
         ItemDto itemDto = ItemMapper.mapToItemDto(item);
-        List<Booking> itemBookings = bookingRepository.findAllByItemId(itemId);
+//        List<Booking> itemBookings = bookingRepository.findAllByItemId(itemId);
+
+        BookingItemDto lastBooking = bookingRepository.findFirstByItemIdAndStatusEqualsAndStartDateIsBefore(itemId,
+                        BookingStatus.APPROVED, LocalDateTime.now(), Sort.by("endDate").descending())
+                .map(BookingMapper::mapToBookingItemDto)
+                .orElse(null);
+
+        BookingItemDto nextBooking = bookingRepository.findFirstByItemIdAndStatusEqualsAndStartDateIsAfter(itemId,
+                        BookingStatus.APPROVED, LocalDateTime.now(), Sort.by("startDate").ascending())
+                .map(BookingMapper::mapToBookingItemDto)
+                .orElse(null);
 
         if (userId == item.getOwner().getId()) {
-            itemDto.setLastBooking(getLastBooking(itemBookings));
-            itemDto.setNextBooking(getNextBooking(itemBookings));
+            itemDto.setLastBooking(lastBooking);
+            itemDto.setNextBooking(nextBooking);
         }
         itemDto.setComments(commentRepository.findAllByItemId(itemId)
                 .stream()
@@ -78,8 +86,19 @@ public class ItemServiceImpl implements ItemService {
 
         itemDtos.forEach(item -> {
             long itemId = item.getId();
-            item.setLastBooking(getLastBooking(bookingRepository.findAllByItemId(itemId)));
-            item.setNextBooking(getNextBooking(bookingRepository.findAllByItemId(itemId)));
+            BookingItemDto lastBooking = bookingRepository.findFirstByItemIdAndStatusEqualsAndStartDateIsBefore(itemId,
+                            BookingStatus.APPROVED, LocalDateTime.now(), Sort.by("endDate").descending())
+                    .map(BookingMapper::mapToBookingItemDto)
+                    .orElse(null);
+
+            BookingItemDto nextBooking = bookingRepository.findFirstByItemIdAndStatusEqualsAndStartDateIsAfter(itemId,
+                            BookingStatus.APPROVED, LocalDateTime.now(), Sort.by("startDate").ascending())
+                    .map(BookingMapper::mapToBookingItemDto)
+                    .orElse(null);
+
+            item.setLastBooking(lastBooking);
+            item.setNextBooking(nextBooking);
+
             item.setComments(commentRepository.findAllByItemId(itemId)
                     .stream()
                     .map(CommentMapper::mapToCommentDto)
@@ -121,7 +140,9 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public CommentDto createComment(Long itemId, CommentDto commentDto, long userId) {
-        Booking booking = getBooking(bookingRepository.findAllByItemIdAndBookerId(itemId, userId));
+        Booking booking = bookingRepository.findFirstByItemIdAndBookerIdAndStatusEqualsAndEndDateIsBefore(itemId,
+                        userId, BookingStatus.APPROVED, LocalDateTime.now(), Sort.by("endDate").descending())
+                .orElseThrow(() -> new NotEndedBookingException("Срок брони должен быть окончен и статус 'APPROVED'"));
 
         if (booking.getBooker().getId() != userId) {
             throw new NotFoundException("Оставлять комментарии может только человек, который бронировал");
@@ -155,37 +176,5 @@ public class ItemServiceImpl implements ItemService {
             oldItem.setOwner(newItem.getOwner());
         }
         return oldItem;
-    }
-
-    private Booking getBooking(List<Booking> bookings) {
-        Optional<Booking> lastBooking = bookings
-                .stream()
-                .filter(booking -> booking.getStatus().equals(BookingStatus.APPROVED)
-                        && booking.getEndDate().isBefore(LocalDateTime.now()))
-                .max(Comparator.comparing(Booking::getEndDate));
-
-        return lastBooking
-                .orElseThrow(() -> new NotEndedBookingException("Срок брони должен быть окончен и статус 'APPROVED'"));
-    }
-
-    private BookingItemDto getLastBooking(List<Booking> bookings) {
-        Optional<Booking> lastBooking = bookings
-                .stream()
-                .filter(booking -> booking.getStatus().equals(BookingStatus.APPROVED)
-                        && booking.getStartDate().isBefore(LocalDateTime.now()))
-                .max(Comparator.comparing(Booking::getEndDate));
-
-
-        return lastBooking.map(BookingMapper::mapToBookingItemDto).orElse(null);
-    }
-
-    private BookingItemDto getNextBooking(List<Booking> bookings) {
-        Optional<Booking> nextBooking = bookings
-                .stream()
-                .filter(booking -> booking.getStatus().equals(BookingStatus.APPROVED)
-                        && booking.getStartDate().isAfter(LocalDateTime.now()))
-                .min(Comparator.comparing(Booking::getStartDate));
-
-        return nextBooking.map(BookingMapper::mapToBookingItemDto).orElse(null);
     }
 }

@@ -49,21 +49,20 @@ public class BookingController {
     public List<BookingDto> getBookingsOfUser(@RequestHeader(CUSTOM_USER_ID_HEADER) long userId,
                                               @RequestParam(defaultValue = "ALL") String state) {
         log.info(String.format("Получаем все %s брони пользователя с идентификатором %s", state, userId));
-        checkIfStateSupports(state);
-        return service.getAllByUser(userId, BookingState.valueOf(state));
+        return service.getAllByUser(userId, getBookingState(state));
     }
 
     @GetMapping("/owner")
     public List<BookingDto> getBookingsOfOwnerItems(@RequestHeader(CUSTOM_USER_ID_HEADER) long userId,
                                                     @RequestParam(defaultValue = "ALL") String state) {
         log.info(String.format("Получаем все %s брони владельца вещей с идентификатором %s", state, userId));
-        checkIfStateSupports(state);
-        return service.getAllByOwnerItems(userId, BookingState.valueOf(state));
+        return service.getAllByOwnerItems(userId, getBookingState(state));
     }
 
-    private void checkIfStateSupports(String state) {
+    private BookingState getBookingState(String state) {
         if (!Enums.getIfPresent(BookingState.class, state).isPresent()) {
-            throw new NotSupportedStateException("Unknown state: UNSUPPORTED_STATUS");
+            throw new NotSupportedStateException(String.format("Unknown state: %s", state));
         }
+        return BookingState.valueOf(state);
     }
 }

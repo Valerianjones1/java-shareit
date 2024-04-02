@@ -10,8 +10,6 @@ import java.time.LocalDateTime;
 
 import static ru.practicum.shareit.booking.BookingStatus.WAITING;
 
-@NamedEntityGraph(name = "booking-entity-graph",
-        attributeNodes = {@NamedAttributeNode("booker"), @NamedAttributeNode("item")})
 @Entity
 @Table(name = "bookings")
 @Getter
@@ -31,11 +29,11 @@ public class Booking {
     @Enumerated(EnumType.STRING)
     private BookingStatus status = WAITING;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "booker_id", nullable = false)
     private User booker;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "item_id", nullable = false)
     private Item item;
 }
