@@ -8,7 +8,7 @@ import javax.validation.constraints.NotNull;
 
 @Data
 public class UserDto {
-    private Integer id;
+    private Long id;
 
     @NotNull
     @NotBlank

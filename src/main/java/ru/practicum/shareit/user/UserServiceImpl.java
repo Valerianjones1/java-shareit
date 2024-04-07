@@ -1,11 +1,11 @@
 package ru.practicum.shareit.user;
 
 import lombok.RequiredArgsConstructor;
-import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.dto.UserUpdateDto;
+import ru.practicum.shareit.user.mapper.UserMapper;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -13,48 +13,43 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
-    private final UserRepository repo;
-    private final ModelMapper mapper;
+    private final UserRepository repository;
 
     @Override
     public List<UserDto> getAll() {
-        return repo.getAll().stream()
-                .map(user -> mapper.map(user, UserDto.class))
+        return repository.findAll().stream()
+                .map(UserMapper::mapToUserDto)
                 .collect(Collectors.toList());
     }
 
     @Override
     public UserDto create(UserDto userDto) {
-        User user = mapper.map(userDto, User.class);
-        User savedUser = repo.create(user);
-        return mapper.map(savedUser, UserDto.class);
+        User user = UserMapper.mapToUser(userDto);
+        return UserMapper.mapToUserDto(repository.save(user));
     }
 
     @Override
-    public UserDto get(int id) {
-        User user = repo.get(id)
+    public UserDto get(long id) {
+        User user = repository.findById(id)
                 .orElseThrow(() -> new NotFoundException(
                         String.format("Пользователь с идентификатором %s не найден", id)));
-        return mapper.map(user, UserDto.class);
+        return UserMapper.mapToUserDto(user);
     }
 
     @Override
-    public void remove(int id) {
-        repo.remove(id);
+    public void remove(long id) {
+        repository.deleteById(id);
     }
 
     @Override
     public UserDto update(UserUpdateDto userDto) {
-        User user = mapper.map(userDto, User.class);
-        User foundUser = repo.get(user.getId())
+        User user = UserMapper.mapToUser(userDto);
+        User foundUser = repository.findById(user.getId())
                 .orElseThrow(() -> new NotFoundException(
-                        String.format("Пользователь для обновления с идентификатором %s не найден",
-                                user.getId())));
+                        String.format("Пользователь для обновления с идентификатором %s не найден", user.getId())));
 
-        String oldEmail = foundUser.getEmail();
         User updatedUser = fillUser(user, foundUser);
-        repo.update(updatedUser, oldEmail);
-        return mapper.map(updatedUser, UserDto.class);
+        return UserMapper.mapToUserDto(repository.save(updatedUser));
     }
 
     private User fillUser(User newUser, User oldUser) {
