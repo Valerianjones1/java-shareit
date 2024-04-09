@@ -1,6 +1,7 @@
 package ru.practicum.shareit.item;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.booking.Booking;
@@ -16,6 +17,8 @@ import ru.practicum.shareit.item.dto.ItemCreateDto;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.mapper.CommentMapper;
 import ru.practicum.shareit.item.mapper.ItemMapper;
+import ru.practicum.shareit.request.ItemRequest;
+import ru.practicum.shareit.request.ItemRequestRepository;
 import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserRepository;
 
@@ -34,13 +37,18 @@ public class ItemServiceImpl implements ItemService {
 
     private final CommentRepository commentRepository;
 
+    private final ItemRequestRepository itemRequestRepository;
+
     @Override
     public ItemDto create(ItemCreateDto itemCreateDto, long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException(
                         String.format("Пользователь с идентификатором %s не найден", userId)));
 
-        Item item = ItemMapper.mapToItem(itemCreateDto, user);
+        ItemRequest request = itemCreateDto.getRequestId() != null ?
+                itemRequestRepository.findById(itemCreateDto.getRequestId()).orElse(null) : null;
+
+        Item item = ItemMapper.mapToItem(itemCreateDto, user, request);
 
         return ItemMapper.mapToItemDto(repository.save(item));
     }
@@ -64,8 +72,8 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public List<ItemDto> getAll(long ownerId) {
-        List<Item> items = repository.findAllByOwnerId(ownerId, Sort.by("id").ascending());
+    public List<ItemDto> getAll(long ownerId, Pageable pageable) {
+        List<Item> items = repository.findAllByOwnerId(ownerId, pageable);
 
         List<Long> itemsIds = items
                 .stream()
@@ -124,11 +132,12 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public List<ItemDto> search(String text) {
+    public List<ItemDto> search(String text, Pageable pageable) {
         if (text.isBlank()) {
             return Collections.emptyList();
         }
-        List<Item> searchedItems = repository.findByNameOrDescriptionContainingIgnoreCaseAndAvailableTrue(text, text);
+        List<Item> searchedItems = repository.findByNameOrDescriptionContainingIgnoreCaseAndAvailableTrue(text, text,
+                pageable);
         return searchedItems.stream()
                 .map(ItemMapper::mapToItemDto)
                 .collect(Collectors.toList());

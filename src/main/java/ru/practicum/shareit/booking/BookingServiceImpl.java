@@ -1,7 +1,7 @@
 package ru.practicum.shareit.booking;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.booking.dto.BookingCreateDto;
 import ru.practicum.shareit.booking.dto.BookingDto;
@@ -24,8 +24,6 @@ public class BookingServiceImpl implements BookingService {
     private final BookingRepository repository;
     private final UserRepository userRepository;
     private final ItemRepository itemRepository;
-
-    private static final Sort SORT = Sort.by("startDate").descending();
 
     @Override
     public BookingDto create(BookingCreateDto bookingCreateDto, long userId) {
@@ -86,27 +84,27 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public List<BookingDto> getAllByUser(long userId, BookingState state) {
+    public List<BookingDto> getAllByUser(long userId, BookingState state, Pageable pageable) {
         checkIfUserExists(userId);
         List<Booking> bookers;
         switch (state) {
             case PAST:
-                bookers = repository.findAllByBookerIdWithPastState(userId, LocalDateTime.now(), SORT);
+                bookers = repository.findAllByBookerIdWithPastState(userId, LocalDateTime.now(), pageable);
                 break;
             case FUTURE:
-                bookers = repository.findAllByBookerIdWithFutureState(userId, LocalDateTime.now(), SORT);
+                bookers = repository.findAllByBookerIdWithFutureState(userId, LocalDateTime.now(), pageable);
                 break;
             case CURRENT:
-                bookers = repository.findAllByBookerIdWithCurrentState(userId, LocalDateTime.now(), SORT);
+                bookers = repository.findAllByBookerIdWithCurrentState(userId, LocalDateTime.now(), pageable);
                 break;
             case REJECTED:
-                bookers = repository.findAllByBookerIdAndStatusEquals(userId, BookingStatus.REJECTED, SORT);
+                bookers = repository.findAllByBookerIdAndStatusEquals(userId, BookingStatus.REJECTED, pageable);
                 break;
             case WAITING:
-                bookers = repository.findAllByBookerIdAndStatusEquals(userId, BookingStatus.WAITING, SORT);
+                bookers = repository.findAllByBookerIdAndStatusEquals(userId, BookingStatus.WAITING, pageable);
                 break;
             default:
-                bookers = repository.findAllByBookerId(userId, SORT);
+                bookers = repository.findAllByBookerId(userId, pageable);
                 break;
         }
 
@@ -116,27 +114,27 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public List<BookingDto> getAllByOwnerItems(long userId, BookingState state) {
+    public List<BookingDto> getAllByOwnerItems(long userId, BookingState state, Pageable pageable) {
         checkIfUserExists(userId);
         List<Booking> bookers;
         switch (state) {
             case PAST:
-                bookers = repository.findAllByItemOwnerIdWithPastState(userId, LocalDateTime.now(), SORT);
+                bookers = repository.findAllByItemOwnerIdWithPastState(userId, LocalDateTime.now(), pageable);
                 break;
             case FUTURE:
-                bookers = repository.findAllByItemOwnerIdWithFutureState(userId, LocalDateTime.now(), SORT);
+                bookers = repository.findAllByItemOwnerIdWithFutureState(userId, LocalDateTime.now(), pageable);
                 break;
             case CURRENT:
-                bookers = repository.findAllByItemOwnerIdWithCurrentState(userId, LocalDateTime.now(), SORT);
+                bookers = repository.findAllByItemOwnerIdWithCurrentState(userId, LocalDateTime.now(), pageable);
                 break;
             case REJECTED:
-                bookers = repository.findAllByItemOwnerIdAndStatusEquals(userId, BookingStatus.REJECTED, SORT);
+                bookers = repository.findAllByItemOwnerIdAndStatusEquals(userId, BookingStatus.REJECTED, pageable);
                 break;
             case WAITING:
-                bookers = repository.findAllByItemOwnerIdAndStatusEquals(userId, BookingStatus.WAITING, SORT);
+                bookers = repository.findAllByItemOwnerIdAndStatusEquals(userId, BookingStatus.WAITING, pageable);
                 break;
             default:
-                bookers = repository.findAllByItemOwnerId(userId, SORT);
+                bookers = repository.findAllByItemOwnerId(userId, pageable);
                 break;
         }
 
