@@ -28,7 +28,6 @@ public class BookingRepositoryTest {
     @Autowired
     private BookingRepository bookingRepository;
 
-
     private User user;
     private Booking booking;
     private Booking futureBooking;
@@ -94,6 +93,19 @@ public class BookingRepositoryTest {
     }
 
     @Test
+    void shouldReturnEmptyAllBookingByBookerId() {
+        bookingRepository.delete(booking);
+        bookingRepository.delete(pastBooking);
+        bookingRepository.delete(currentBooking);
+        bookingRepository.delete(futureBooking);
+
+        List<Booking> bookings = bookingRepository.findAllByBookerId(user.getId(), Pageable.unpaged());
+
+        assertTrue(bookings.isEmpty());
+        assertEquals(0, bookings.size());
+    }
+
+    @Test
     void shouldFindAllByBookerIdWithPastState() {
         List<Booking> bookings = bookingRepository.findAllByBookerIdWithPastState(user.getId(), LocalDateTime.now(), Pageable.unpaged());
 
@@ -107,6 +119,17 @@ public class BookingRepositoryTest {
     }
 
     @Test
+    void shouldReturnEmptyFindAllByBookerIdWithPastState() {
+        bookingRepository.delete(booking);
+        bookingRepository.delete(pastBooking);
+
+        List<Booking> bookings = bookingRepository.findAllByBookerIdWithPastState(user.getId(), LocalDateTime.now(), Pageable.unpaged());
+
+        assertTrue(bookings.isEmpty());
+        assertEquals(0, bookings.size());
+    }
+
+    @Test
     void shouldFindAllByBookerIdWithFutureState() {
         List<Booking> bookings = bookingRepository.findAllByBookerIdWithFutureState(user.getId(), LocalDateTime.now(), Pageable.unpaged());
 
@@ -117,6 +140,16 @@ public class BookingRepositoryTest {
     }
 
     @Test
+    void shouldReturnEmptyFindAllByBookerIdWithFutureState() {
+        bookingRepository.delete(futureBooking);
+
+        List<Booking> bookings = bookingRepository.findAllByBookerIdWithFutureState(user.getId(), LocalDateTime.now(), Pageable.unpaged());
+
+        assertTrue(bookings.isEmpty());
+        assertEquals(0, bookings.size());
+    }
+
+    @Test
     void shouldFindAllByBookerIdWithCurrentState() {
         List<Booking> bookings = bookingRepository.findAllByBookerIdWithCurrentState(user.getId(), LocalDateTime.now(), Pageable.unpaged());
 
@@ -124,6 +157,16 @@ public class BookingRepositoryTest {
         assertThat(currentBooking)
                 .usingRecursiveComparison()
                 .isEqualTo(bookings.get(0));
+    }
+
+    @Test
+    void shouldReturnEmptyFindAllByBookerIdWithCurrentState() {
+        bookingRepository.delete(currentBooking);
+
+        List<Booking> bookings = bookingRepository.findAllByBookerIdWithCurrentState(user.getId(), LocalDateTime.now(), Pageable.unpaged());
+
+        assertTrue(bookings.isEmpty());
+        assertEquals(0, bookings.size());
     }
 
     @Test
@@ -139,6 +182,15 @@ public class BookingRepositoryTest {
     }
 
     @Test
+    void shouldReturnEmptyFindAllByBookerIdWithRejectedState() {
+        List<Booking> bookings = bookingRepository.findAllByBookerIdAndStatusEquals(user.getId(),
+                BookingStatus.REJECTED, Pageable.unpaged());
+
+        assertTrue(bookings.isEmpty());
+        assertEquals(0, bookings.size());
+    }
+
+    @Test
     void shouldFindAllByBookerIdWithWaitingState() {
         booking.setStatus(BookingStatus.WAITING);
         List<Booking> bookings = bookingRepository.findAllByBookerIdAndStatusEquals(user.getId(),
@@ -148,6 +200,15 @@ public class BookingRepositoryTest {
         assertThat(booking)
                 .usingRecursiveComparison()
                 .isEqualTo(bookings.get(0));
+    }
+
+    @Test
+    void shouldReturnEmptyFindAllByBookerIdWithWaitingState() {
+        List<Booking> bookings = bookingRepository.findAllByBookerIdAndStatusEquals(user.getId(),
+                BookingStatus.WAITING, Pageable.unpaged());
+
+        assertTrue(bookings.isEmpty());
+        assertEquals(0, bookings.size());
     }
 
     @Test
@@ -165,6 +226,18 @@ public class BookingRepositoryTest {
     }
 
     @Test
+    void shouldReturnEmptyFindAllByItemOwnerIdWithPastState() {
+        bookingRepository.delete(booking);
+        bookingRepository.delete(pastBooking);
+
+        List<Booking> bookings = bookingRepository.findAllByItemOwnerIdWithPastState(user.getId(),
+                LocalDateTime.now(), Pageable.unpaged());
+
+        assertTrue(bookings.isEmpty());
+        assertEquals(0, bookings.size());
+    }
+
+    @Test
     void shouldFindAllByItemOwnerIdWithFutureState() {
         List<Booking> bookings = bookingRepository.findAllByItemOwnerIdWithFutureState(user.getId(),
                 LocalDateTime.now(), Pageable.unpaged());
@@ -173,6 +246,16 @@ public class BookingRepositoryTest {
         assertThat(futureBooking)
                 .usingRecursiveComparison()
                 .isEqualTo(bookings.get(0));
+    }
+
+    @Test
+    void shouldReturnEmptyFindAllByItemOwnerIdWithFutureState() {
+        bookingRepository.delete(futureBooking);
+        List<Booking> bookings = bookingRepository.findAllByItemOwnerIdWithFutureState(user.getId(),
+                LocalDateTime.now(), Pageable.unpaged());
+
+        assertTrue(bookings.isEmpty());
+        assertEquals(0, bookings.size());
     }
 
 
@@ -188,6 +271,18 @@ public class BookingRepositoryTest {
     }
 
     @Test
+    void shouldReturnEmptyFindAllByItemOwnerIdWithCurrentState() {
+        bookingRepository.delete(currentBooking);
+
+        List<Booking> bookings = bookingRepository.findAllByItemOwnerIdWithCurrentState(user.getId(),
+                LocalDateTime.now(), Pageable.unpaged());
+
+
+        assertTrue(bookings.isEmpty());
+        assertEquals(0, bookings.size());
+    }
+
+    @Test
     void shouldFindAllByItemOwnerIdAndStatusRejected() {
         booking.setStatus(BookingStatus.REJECTED);
         List<Booking> bookings = bookingRepository.findAllByItemOwnerIdAndStatusEquals(user.getId(),
@@ -197,6 +292,15 @@ public class BookingRepositoryTest {
         assertThat(booking)
                 .usingRecursiveComparison()
                 .isEqualTo(bookings.get(0));
+    }
+
+    @Test
+    void shouldReturnEmptyFindAllByItemOwnerIdAndStatusRejected() {
+        List<Booking> bookings = bookingRepository.findAllByItemOwnerIdAndStatusEquals(user.getId(),
+                BookingStatus.REJECTED, Pageable.unpaged());
+
+        assertTrue(bookings.isEmpty());
+        assertEquals(0, bookings.size());
     }
 
     @Test
@@ -212,6 +316,15 @@ public class BookingRepositoryTest {
     }
 
     @Test
+    void shouldReturnEmptyFindAllByItemOwnerIdAndStatusWaiting() {
+        List<Booking> bookings = bookingRepository.findAllByItemOwnerIdAndStatusEquals(user.getId(),
+                BookingStatus.WAITING, Pageable.unpaged());
+
+        assertTrue(bookings.isEmpty());
+        assertEquals(0, bookings.size());
+    }
+
+    @Test
     void shouldFindAllByItemOwnerId() {
         List<Booking> bookings = bookingRepository.findAllByItemOwnerId(user.getId(), Pageable.unpaged());
 
@@ -219,6 +332,19 @@ public class BookingRepositoryTest {
         assertThat(booking)
                 .usingRecursiveComparison()
                 .isEqualTo(bookings.get(0));
+    }
+
+    @Test
+    void shouldReturnEmptyFindAllByItemOwnerId() {
+        bookingRepository.delete(booking);
+        bookingRepository.delete(pastBooking);
+        bookingRepository.delete(currentBooking);
+        bookingRepository.delete(futureBooking);
+
+        List<Booking> bookings = bookingRepository.findAllByItemOwnerId(user.getId(), Pageable.unpaged());
+
+        assertTrue(bookings.isEmpty());
+        assertEquals(0, bookings.size());
     }
 
     @Test
