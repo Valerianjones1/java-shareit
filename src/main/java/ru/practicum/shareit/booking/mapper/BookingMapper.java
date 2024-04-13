@@ -22,11 +22,19 @@ public class BookingMapper {
         return booking;
     }
 
+    public static Booking mapToBooking(BookingCreateDto bookingCreateDto) {
+        Booking booking = new Booking();
+        booking.setId(bookingCreateDto.getId());;
+        booking.setStartDate(bookingCreateDto.getStart());
+        booking.setEndDate(bookingCreateDto.getEnd());
+
+        return booking;
+    }
+
     public static BookingDto mapToBookingDto(Booking booking) {
         BookingDto bookingDto = new BookingDto();
         bookingDto.setId(booking.getId());
-        bookingDto.setItem(ItemMapper.mapToItemDto(booking.getItem()));
-        bookingDto.setBooker(UserMapper.mapToUserDto(booking.getBooker()));
+
         bookingDto.setStart(booking.getStartDate());
         bookingDto.setEnd(booking.getEndDate());
         bookingDto.setStatus(booking.getStatus());

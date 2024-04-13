@@ -27,27 +27,31 @@ public class ItemRepositoryTest {
     private User user;
     private Item item1;
     private Item item2;
+    private Item item3;
 
     @BeforeEach
     void setUp() {
         user = new User();
-        user.setId(1L);
         user.setName("test");
         user.setEmail("test@email.ru");
 
         item1 = new Item();
-        item1.setId(1L);
-        item1.setDescription("desc");
+        item1.setDescription("testdesc");
         item1.setAvailable(true);
         item1.setName("name");
         item1.setOwner(user);
 
         item2 = new Item();
-        item2.setId(2L);
-        item1.setDescription("test");
-        item1.setAvailable(true);
-        item1.setName("est");
-        item1.setOwner(user);
+        item2.setDescription("test");
+        item2.setAvailable(true);
+        item2.setName("est");
+        item2.setOwner(user);
+
+        item3 = new Item();
+        item3.setDescription("desc");
+        item3.setAvailable(true);
+        item3.setName("name");
+        item3.setOwner(user);
     }
 
     @Test
@@ -55,20 +59,24 @@ public class ItemRepositoryTest {
         userRepository.save(user);
         itemRepository.save(item1);
         itemRepository.save(item2);
+        itemRepository.save(item3);
 
         String textToSearch = "test";
         List<Item> items = itemRepository.findByNameOrDescriptionContainingIgnoreCaseAndAvailableTrue(
                 textToSearch, textToSearch, Pageable.unpaged());
 
 
-        assertEquals(1, items.size());
-        assertEquals(item1.getName(), items.get(0).getName());
-        assertEquals(item1.getDescription(), items.get(0).getDescription());
+        assertEquals(2, items.size());
     }
 
     @Test
     void shouldReturnEmptySearchedItems() {
-        String textToSearch = "test";
+        userRepository.save(user);
+        itemRepository.save(item1);
+        itemRepository.save(item2);
+        itemRepository.save(item3);
+
+        String textToSearch = "no";
         List<Item> items = itemRepository.findByNameOrDescriptionContainingIgnoreCaseAndAvailableTrue(
                 textToSearch, textToSearch, Pageable.unpaged());
 
