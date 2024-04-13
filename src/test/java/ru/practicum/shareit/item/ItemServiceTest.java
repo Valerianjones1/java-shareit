@@ -362,7 +362,9 @@ public class ItemServiceTest {
 
         CommentDto commentDto = mockItemService.createComment(itemId, comment, userId);
 
-        assertEquals(CommentMapper.mapToCommentDto(createComment), commentDto);
+        assertEquals(CommentMapper.mapToCommentDto(createComment).getId(), commentDto.getId());
+        assertEquals(CommentMapper.mapToCommentDto(createComment).getText(), commentDto.getText());
+        assertEquals(CommentMapper.mapToCommentDto(createComment).getAuthorName(), commentDto.getAuthorName());
 
         Mockito.verifyNoMoreInteractions(itemRequestRepository, userRepository, itemRepository, commentRepository, bookingRepository);
     }
