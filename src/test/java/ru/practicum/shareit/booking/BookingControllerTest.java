@@ -13,6 +13,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import ru.practicum.shareit.booking.dto.BookingCreateDto;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.mapper.BookingMapper;
+import ru.practicum.shareit.error.ErrorResponse;
 import ru.practicum.shareit.item.Item;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.user.User;
@@ -95,6 +96,24 @@ public class BookingControllerTest {
     }
 
     @Test
+    void shouldNotCreateBookingWhenDtoIsNotValid() throws Exception {
+        BookingDto bookingDto = BookingMapper.mapToBookingDto(BookingMapper.mapToBooking(bookingCreateDto, user, item));
+        bookingDto.setStatus(BookingStatus.WAITING);
+
+        bookingCreateDto.setItemId(null);
+
+        ErrorResponse errorResponse = new ErrorResponse("", "Ошибка с валидацией");
+        mvc.perform(post("/bookings")
+                        .content(mapper.writeValueAsString(bookingCreateDto))
+                        .header("X-Sharer-User-Id", 1L)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.description", is(errorResponse.getDescription())));
+    }
+
+    @Test
     void shouldUpdateBookingStatus() throws Exception {
         BookingDto bookingDto = BookingMapper.mapToBookingDto(BookingMapper.mapToBooking(bookingCreateDto, user, item));
         bookingDto.setStatus(BookingStatus.APPROVED);
@@ -162,7 +181,32 @@ public class BookingControllerTest {
     }
 
     @Test
+    void shouldGetBookingsOfUserWhenSizeAndFromNull() throws Exception {
+        BookingDto bookingDto = BookingMapper.mapToBookingDto(booking);
+        bookingDto.setStatus(BookingStatus.APPROVED);
+
+        Mockito
+                .when(bookingService.getAllByUser(anyLong(), any(BookingState.class), any(Pageable.class)))
+                .thenReturn(List.of(bookingDto));
+
+        mvc.perform(get("/bookings")
+                        .header("X-Sharer-User-Id", 1L)
+                        .param("state", "ALL")
+                        .param("from", (String) null)
+                        .param("size", (String) null)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id", is(bookingDto.getId()), Long.class))
+                .andExpect(jsonPath("$[0].item", is(bookingDto.getItem()), ItemDto.class))
+                .andExpect(jsonPath("$[0].status", is(bookingDto.getStatus().toString())))
+                .andExpect(jsonPath("$[0].booker", is(bookingDto.getBooker()), UserDto.class));
+    }
+
+    @Test
     void shouldNotGetBookingsByUserWhenFromIsNegative() throws Exception {
+        ErrorResponse errorResponse = new ErrorResponse("Параметры size и from не могут меньше нуля", "Ошибка с валидацией");
         mvc.perform(get("/bookings/owner")
                         .header("X-Sharer-User-Id", 1L)
                         .param("state", "ALL")
@@ -171,11 +215,15 @@ public class BookingControllerTest {
                         .characterEncoding(StandardCharsets.UTF_8)
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error", is(errorResponse.getError())))
+                .andExpect(jsonPath("$.description", is(errorResponse.getDescription())));
     }
 
     @Test
     void shouldNotGetBookingsByUserWhenSizeIsNegative() throws Exception {
+        ErrorResponse errorResponse = new ErrorResponse("Произошла непредвиденная ошибка",
+                "", "");
         mvc.perform(get("/bookings/owner")
                         .header("X-Sharer-User-Id", 1L)
                         .param("state", "ALL")
@@ -184,12 +232,16 @@ public class BookingControllerTest {
                         .characterEncoding(StandardCharsets.UTF_8)
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.error", is(errorResponse.getError())));
     }
 
 
     @Test
     void shouldNotGetBookingsByUserWhenStateIsNotSupported() throws Exception {
+        ErrorResponse errorResponse = new ErrorResponse(String.format("Unknown state: %s", "MANY"),
+                "Состояние не поддерживается");
+
         mvc.perform(get("/bookings/owner")
                         .header("X-Sharer-User-Id", 1L)
                         .param("state", "MANY")
@@ -198,7 +250,9 @@ public class BookingControllerTest {
                         .characterEncoding(StandardCharsets.UTF_8)
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error", is(errorResponse.getError())))
+                .andExpect(jsonPath("$.description", is(errorResponse.getDescription())));
     }
 
     @Test
@@ -226,7 +280,32 @@ public class BookingControllerTest {
     }
 
     @Test
+    void shouldGetBookingsByOwnerItemsWhenSizeAndFromNull() throws Exception {
+        BookingDto bookingDto = BookingMapper.mapToBookingDto(booking);
+        bookingDto.setStatus(BookingStatus.APPROVED);
+
+        Mockito
+                .when(bookingService.getAllByOwnerItems(anyLong(), any(BookingState.class), any(Pageable.class)))
+                .thenReturn(List.of(bookingDto));
+
+        mvc.perform(get("/bookings/owner")
+                        .header("X-Sharer-User-Id", 1L)
+                        .param("state", "ALL")
+                        .param("from", (String) null)
+                        .param("size", (String) null)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id", is(bookingDto.getId()), Long.class))
+                .andExpect(jsonPath("$[0].item", is(bookingDto.getItem()), ItemDto.class))
+                .andExpect(jsonPath("$[0].status", is(bookingDto.getStatus().toString())))
+                .andExpect(jsonPath("$[0].booker", is(bookingDto.getBooker()), UserDto.class));
+    }
+
+    @Test
     void shouldNotGetBookingsByOwnerItemsWhenSizeOrFromIsNegative() throws Exception {
+        ErrorResponse errorResponse = new ErrorResponse("Параметры size и from не могут меньше нуля", "Ошибка с валидацией");
         mvc.perform(get("/bookings/owner")
                         .header("X-Sharer-User-Id", 1L)
                         .param("state", "ALL")
@@ -235,11 +314,16 @@ public class BookingControllerTest {
                         .characterEncoding(StandardCharsets.UTF_8)
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error", is(errorResponse.getError())))
+                .andExpect(jsonPath("$.description", is(errorResponse.getDescription())));
     }
 
     @Test
     void shouldNotGetBookingsByOwnerItemsWhenStateIsNotSupported() throws Exception {
+        ErrorResponse errorResponse = new ErrorResponse(String.format("Unknown state: %s", "TEST"),
+                "Состояние не поддерживается");
+
         mvc.perform(get("/bookings/owner")
                         .header("X-Sharer-User-Id", 1L)
                         .param("state", "TEST")
@@ -248,6 +332,8 @@ public class BookingControllerTest {
                         .characterEncoding(StandardCharsets.UTF_8)
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error", is(errorResponse.getError())))
+                .andExpect(jsonPath("$.description", is(errorResponse.getDescription())));
     }
 }

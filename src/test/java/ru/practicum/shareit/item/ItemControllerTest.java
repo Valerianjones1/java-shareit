@@ -16,6 +16,7 @@ import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.mapper.ItemMapper;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.List;
 
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
@@ -52,8 +53,6 @@ public class ItemControllerTest {
         commentDto.setId(1L);
         commentDto.setText("test text");
         commentDto.setAuthorName("test author");
-
-
     }
 
     @Test
@@ -79,6 +78,19 @@ public class ItemControllerTest {
                 .andExpect(jsonPath("$.nextBooking", is(itemDto.getNextBooking())))
                 .andExpect(jsonPath("$.available", is(itemDto.getAvailable())))
                 .andExpect(jsonPath("$.requestId", is(itemDto.getRequestId())));
+    }
+
+    @Test
+    void shouldNotCreateItemWhenDtoIsNotValid() throws Exception {
+        itemCreateDto.setDescription("");
+
+        mvc.perform(post("/items")
+                        .content(mapper.writeValueAsString(itemCreateDto))
+                        .header("X-Sharer-User-Id", 1L)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -159,6 +171,30 @@ public class ItemControllerTest {
     }
 
     @Test
+    void shouldNotGetAllItemsOfOwnerWhenFromIsNegative() throws Exception {
+        mvc.perform(get("/items")
+                        .header("X-Sharer-User-Id", 1L)
+                        .param("size", "20")
+                        .param("from", "-1")
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldNotGetAllItemsOfOwnerWhenSizeIsNegative() throws Exception {
+        mvc.perform(get("/items")
+                        .header("X-Sharer-User-Id", 1L)
+                        .param("size", "-1")
+                        .param("from", "1")
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isInternalServerError());
+    }
+
+    @Test
     void shouldSearchItems() throws Exception {
         ItemDto itemDto = ItemMapper.mapToItemDto(ItemMapper.mapToItem(itemCreateDto));
 
@@ -186,8 +222,48 @@ public class ItemControllerTest {
     }
 
     @Test
-    void shouldCreateComment() throws Exception {
+    void shouldSearchItemsWhenNoData() throws Exception {
+        Mockito
+                .when(itemService.search(anyString(), any(Pageable.class)))
+                .thenReturn(Collections.emptyList());
 
+        mvc.perform(get("/items/search")
+                        .param("size", "20")
+                        .param("from", "0")
+                        .param("text", "test")
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+    }
+
+    @Test
+    void shouldNotSearchItemsWhenFromIsNegative() throws Exception {
+        mvc.perform(get("/items/search")
+                        .param("size", "20")
+                        .param("from", "-1")
+                        .param("text", "test")
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldNotSearchItemsWhenSizeIsNegative() throws Exception {
+        mvc.perform(get("/items/search")
+                        .param("size", "-1")
+                        .param("from", "1")
+                        .param("text", "test")
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    void shouldCreateComment() throws Exception {
         Mockito
                 .when(itemService.createComment(anyLong(), any(CommentDto.class), anyLong()))
                 .thenReturn(commentDto);
@@ -203,5 +279,18 @@ public class ItemControllerTest {
                 .andExpect(jsonPath("$.text", is(commentDto.getText())))
                 .andExpect(jsonPath("$.authorName", is(commentDto.getAuthorName())))
                 .andExpect(jsonPath("$.created", is(commentDto.getCreated())));
+    }
+
+    @Test
+    void shouldNotCreateCommentWhenDtoIsNotValid() throws Exception {
+        commentDto.setText(null);
+
+        mvc.perform(post("/items/{itemId}/comment", 1L)
+                        .content(mapper.writeValueAsString(commentDto))
+                        .header("X-Sharer-User-Id", 1L)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
     }
 }

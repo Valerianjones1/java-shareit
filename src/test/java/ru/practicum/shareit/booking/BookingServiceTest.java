@@ -71,13 +71,8 @@ public class BookingServiceTest {
         bookingCreateDto.setEnd(LocalDateTime.now().plusHours(2));
         bookingCreateDto.setItemId(item.getId());
 
-        booking = new Booking();
-        booking.setId(1L);
-        booking.setStartDate(LocalDateTime.now().minusDays(2));
-        booking.setEndDate(LocalDateTime.now().minusDays(1));
+        booking = BookingMapper.mapToBooking(bookingCreateDto, user, item);
         booking.setStatus(BookingStatus.APPROVED);
-        booking.setBooker(user);
-        booking.setItem(item);
 
         currentBooking = new Booking();
         currentBooking.setId(2L);
@@ -206,6 +201,21 @@ public class BookingServiceTest {
 
         assertEquals(booking.getId(), bookingDto.getId());
         assertEquals(booking.getStatus(), bookingDto.getStatus());
+    }
+
+    @Test
+    void shouldNotUpdateStatusOfBookingWhenUserNotFound() {
+        booking.setStatus(BookingStatus.WAITING);
+
+        Mockito
+                .when(repository.findById(anyLong()))
+                .thenReturn(Optional.empty());
+
+
+        NotFoundException exception = assertThrows(NotFoundException.class,
+                () -> bookingService.updateStatus(booking.getId(), user.getId(), true));
+
+        assertEquals(String.format("Бронь с идентификатором %s не найдена", user.getId()), exception.getMessage());
     }
 
     @Test

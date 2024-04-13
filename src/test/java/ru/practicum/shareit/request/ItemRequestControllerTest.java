@@ -16,6 +16,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 
+import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.hamcrest.core.Is.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -31,18 +32,17 @@ public class ItemRequestControllerTest {
     private ObjectMapper mapper;
     @MockBean
     private ItemRequestService itemRequestService;
-
     @Autowired
     private MockMvc mvc;
+
+    private ItemRequestCreateDto itemRequestCreateDto;
 
     @Test
     void shouldCreateItemRequest() throws Exception {
         long requestorId = 1L;
 
-
         ItemRequestDto itemRequestDto = new ItemRequestDto(requestorId, "test description",
                 null, Collections.emptyList());
-
 
         Mockito
                 .when(itemRequestService.create(anyLong(), any(ItemRequestCreateDto.class)))
@@ -59,6 +59,20 @@ public class ItemRequestControllerTest {
                 .andExpect(jsonPath("$.description", is(itemRequestDto.getDescription())))
                 .andExpect(jsonPath("$.created", is(itemRequestDto.getCreated())))
                 .andExpect(jsonPath("$.items", is(itemRequestDto.getItems())));
+    }
+
+    @Test
+    void shouldNotCreateItemRequestWhenDtoIsNotValid() throws Exception {
+        itemRequestCreateDto = new ItemRequestCreateDto();
+        itemRequestCreateDto.setDescription(null);
+
+        mvc.perform(post("/requests")
+                        .content(mapper.writeValueAsString(itemRequestCreateDto))
+                        .header("X-Sharer-User-Id", 1L)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -79,6 +93,21 @@ public class ItemRequestControllerTest {
     }
 
     @Test
+    void shouldNotGetAllItemRequestsByRequestorId() throws Exception {
+        Mockito
+                .when(itemRequestService.getAll(anyLong()))
+                .thenReturn(Collections.emptyList());
+
+        mvc.perform(get("/requests")
+                        .header("X-Sharer-User-Id", 1L)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+    }
+
+    @Test
     void shouldGetAllItemRequestsByRequestorIdNot() throws Exception {
         ItemRequestDto itemRequestDto = new ItemRequestDto(1L, "test description",
                 null, Collections.emptyList());
@@ -87,14 +116,39 @@ public class ItemRequestControllerTest {
                 .when(itemRequestService.getAll(anyLong(), any(Pageable.class)))
                 .thenReturn(List.of(itemRequestDto));
 
-        mvc.perform(get("/requests")
+        mvc.perform(get("/requests/all")
                         .header("X-Sharer-User-Id", 1L)
                         .param("size", "20")
                         .param("from", "0")
                         .characterEncoding(StandardCharsets.UTF_8)
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)));
+    }
+
+    @Test
+    void shouldNotGetAllItemRequestsByRequestorIdNotWhenFromIsNegative() throws Exception {
+        mvc.perform(get("/requests/all")
+                        .header("X-Sharer-User-Id", 1L)
+                        .param("size", "20")
+                        .param("from", "-1")
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldNotGetAllItemRequestsByRequestorIdNotWhenSizeIsNegative() throws Exception {
+        mvc.perform(get("/requests/all")
+                        .header("X-Sharer-User-Id", 1L)
+                        .param("size", "-11")
+                        .param("from", "1")
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isInternalServerError());
     }
 
     @Test

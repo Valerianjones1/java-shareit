@@ -22,16 +22,6 @@ public class BookingMapper {
         return booking;
     }
 
-    public static Booking mapToBooking(BookingCreateDto bookingCreateDto) {
-        Booking booking = new Booking();
-        booking.setId(bookingCreateDto.getId());
-        ;
-        booking.setStartDate(bookingCreateDto.getStart());
-        booking.setEndDate(bookingCreateDto.getEnd());
-
-        return booking;
-    }
-
     public static BookingDto mapToBookingDto(Booking booking) {
         BookingDto bookingDto = new BookingDto();
         bookingDto.setId(booking.getId());
