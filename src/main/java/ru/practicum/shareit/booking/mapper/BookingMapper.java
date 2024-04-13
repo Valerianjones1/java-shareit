@@ -24,7 +24,8 @@ public class BookingMapper {
 
     public static Booking mapToBooking(BookingCreateDto bookingCreateDto) {
         Booking booking = new Booking();
-        booking.setId(bookingCreateDto.getId());;
+        booking.setId(bookingCreateDto.getId());
+        ;
         booking.setStartDate(bookingCreateDto.getStart());
         booking.setEndDate(bookingCreateDto.getEnd());
 
@@ -34,7 +35,8 @@ public class BookingMapper {
     public static BookingDto mapToBookingDto(Booking booking) {
         BookingDto bookingDto = new BookingDto();
         bookingDto.setId(booking.getId());
-
+        bookingDto.setBooker(UserMapper.mapToUserDto(booking.getBooker()));
+        bookingDto.setItem(ItemMapper.mapToItemDto(booking.getItem()));
         bookingDto.setStart(booking.getStartDate());
         bookingDto.setEnd(booking.getEndDate());
         bookingDto.setStatus(booking.getStatus());
