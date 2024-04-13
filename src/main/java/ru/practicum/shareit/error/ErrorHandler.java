@@ -20,13 +20,6 @@ public class ErrorHandler {
     }
 
     @ExceptionHandler
-    @ResponseStatus(HttpStatus.CONFLICT)
-    public ErrorResponse handleDataAlreadyExists(final DataAlreadyExistsException e) {
-        log.info("Пользователь уже существует");
-        return new ErrorResponse(e.getMessage(), "Пользователь уже существует");
-    }
-
-    @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handleValidation(final ValidationException e) {
         log.info("Ошибка с валидацией");

@@ -14,7 +14,6 @@ import ru.practicum.shareit.booking.dto.BookingCreateDto;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.mapper.BookingMapper;
 import ru.practicum.shareit.item.Item;
-import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.dto.UserDto;
@@ -43,7 +42,6 @@ public class BookingControllerTest {
     private Booking booking;
     private User user;
     private Item item;
-    private CommentDto commentDto;
 
     @BeforeEach
     void setUp() {
@@ -72,11 +70,6 @@ public class BookingControllerTest {
         booking.setStatus(BookingStatus.APPROVED);
         booking.setBooker(user);
         booking.setItem(item);
-
-        commentDto = new CommentDto();
-        commentDto.setId(1L);
-        commentDto.setText("test text");
-        commentDto.setAuthorName("test author");
     }
 
     @Test
@@ -145,7 +138,7 @@ public class BookingControllerTest {
     }
 
     @Test
-    void shouldGetBookingsOfOwner() throws Exception {
+    void shouldGetBookingsOfUser() throws Exception {
         BookingDto bookingDto = BookingMapper.mapToBookingDto(booking);
         bookingDto.setStatus(BookingStatus.APPROVED);
 
@@ -169,7 +162,47 @@ public class BookingControllerTest {
     }
 
     @Test
-    void shouldGetBookingsByUser() throws Exception {
+    void shouldNotGetBookingsByUserWhenFromIsNegative() throws Exception {
+        mvc.perform(get("/bookings/owner")
+                        .header("X-Sharer-User-Id", 1L)
+                        .param("state", "ALL")
+                        .param("from", "-1")
+                        .param("size", "20")
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldNotGetBookingsByUserWhenSizeIsNegative() throws Exception {
+        mvc.perform(get("/bookings/owner")
+                        .header("X-Sharer-User-Id", 1L)
+                        .param("state", "ALL")
+                        .param("from", "1")
+                        .param("size", "-20")
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+    }
+
+
+    @Test
+    void shouldNotGetBookingsByUserWhenStateIsNotSupported() throws Exception {
+        mvc.perform(get("/bookings/owner")
+                        .header("X-Sharer-User-Id", 1L)
+                        .param("state", "MANY")
+                        .param("from", "1")
+                        .param("size", "20")
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldGetBookingsByOwnerItems() throws Exception {
         BookingDto bookingDto = BookingMapper.mapToBookingDto(booking);
         bookingDto.setStatus(BookingStatus.APPROVED);
 
@@ -192,4 +225,29 @@ public class BookingControllerTest {
                 .andExpect(jsonPath("$[0].booker", is(bookingDto.getBooker()), UserDto.class));
     }
 
+    @Test
+    void shouldNotGetBookingsByOwnerItemsWhenSizeOrFromIsNegative() throws Exception {
+        mvc.perform(get("/bookings/owner")
+                        .header("X-Sharer-User-Id", 1L)
+                        .param("state", "ALL")
+                        .param("from", "-1")
+                        .param("size", "20")
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldNotGetBookingsByOwnerItemsWhenStateIsNotSupported() throws Exception {
+        mvc.perform(get("/bookings/owner")
+                        .header("X-Sharer-User-Id", 1L)
+                        .param("state", "TEST")
+                        .param("from", "1")
+                        .param("size", "20")
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+    }
 }

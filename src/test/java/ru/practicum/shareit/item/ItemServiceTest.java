@@ -15,6 +15,7 @@ import ru.practicum.shareit.booking.BookingStatus;
 import ru.practicum.shareit.booking.mapper.BookingMapper;
 import ru.practicum.shareit.exception.NotEndedBookingException;
 import ru.practicum.shareit.exception.NotFoundException;
+import ru.practicum.shareit.exception.NotRightOwnerException;
 import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemCreateDto;
 import ru.practicum.shareit.item.dto.ItemDto;
@@ -283,7 +284,7 @@ public class ItemServiceTest {
     }
 
     @Test
-    void shouldNotUpdateItemWhenUSerNotFound() {
+    void shouldNotUpdateItemWhenUserNotFound() {
         ItemCreateDto updatedCreateDto = itemCreateDto;
         updatedCreateDto.setName("updated Name");
 
@@ -303,6 +304,36 @@ public class ItemServiceTest {
                 () -> mockItemService.update(updatedCreateDto, user.getId()));
 
         assertEquals(String.format("Пользователь с идентификатором %s не найден", user.getId()), exception.getMessage());
+
+        Mockito.verifyNoMoreInteractions(itemRequestRepository, userRepository, itemRepository, commentRepository, bookingRepository);
+    }
+
+    @Test
+    void shouldNotUpdateItemWhenNotRightOwner() {
+        ItemCreateDto updatedCreateDto = itemCreateDto;
+        updatedCreateDto.setName("updated Name");
+
+        Item item = ItemMapper.mapToItem(itemCreateDto);
+        item.setOwner(user);
+
+        User user2 = new User();
+        user2.setId(2L);
+        user2.setName("test2");
+        user2.setEmail("test2@email.ru");
+
+        Mockito
+                .when(itemRepository.findById(anyLong()))
+                .thenReturn(Optional.of(item));
+
+        Mockito
+                .when(userRepository.findById(anyLong()))
+                .thenReturn(Optional.of(user2));
+
+        NotRightOwnerException exception = assertThrows(
+                NotRightOwnerException.class,
+                () -> mockItemService.update(updatedCreateDto, user.getId()));
+
+        assertEquals("Вещь может редактировать только владелец", exception.getMessage());
 
         Mockito.verifyNoMoreInteractions(itemRequestRepository, userRepository, itemRepository, commentRepository, bookingRepository);
     }
