@@ -6,16 +6,18 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemCreateDto;
 import ru.practicum.shareit.item.dto.ItemDto;
 
 import javax.validation.Valid;
+import javax.validation.constraints.Min;
 import java.util.List;
 
 @RestController
+@Validated
 @RequestMapping("/items")
 @RequiredArgsConstructor
 @Slf4j
@@ -49,24 +51,20 @@ public class ItemController {
 
     @GetMapping
     public List<ItemDto> getAllItemsOfOwner(@RequestHeader(CUSTOM_USER_ID_HEADER) long ownerId,
-                                            @RequestParam(required = false) Integer from,
-                                            @RequestParam(required = false) Integer size) {
+                                            @RequestParam(defaultValue = "0") @Min(value = 0) int from,
+                                            @RequestParam(defaultValue = "10") int size) {
         log.info(String.format("Получаем вещь владельца с идентификатором %s", ownerId));
 
-        Pageable pageable = from == null || size == null ?
-                PageRequest.of(0, Integer.MAX_VALUE, Sort.by("id").ascending()) :
-                PageRequest.of(from / size, size, Sort.by("id").ascending());
-        checkParams(size, from);
+        Pageable pageable = PageRequest.of(from / size, size, Sort.by("id").ascending());
         return service.getAll(ownerId, pageable);
     }
 
     @GetMapping("/search")
     public List<ItemDto> searchItems(@RequestParam String text,
-                                     @RequestParam(required = false) Integer from,
-                                     @RequestParam(required = false) Integer size) {
+                                     @RequestParam(defaultValue = "0") @Min(value = 0) int from,
+                                     @RequestParam(defaultValue = "10") int size) {
         log.info(String.format("Ищем вещи по любому полю, которое содержит %s в себе", text));
-        Pageable pageable = from == null || size == null ? Pageable.unpaged() : PageRequest.of(from / size, size);
-        checkParams(size, from);
+        Pageable pageable = PageRequest.of(from / size, size);
         return service.search(text, pageable);
     }
 
@@ -76,11 +74,5 @@ public class ItemController {
                                     @RequestHeader(CUSTOM_USER_ID_HEADER) long userId) {
         log.info(String.format("Создаем комментарий к вещи с идентификатором %s", itemId));
         return service.createComment(itemId, commentDto, userId);
-    }
-
-    private void checkParams(Integer size, Integer from) {
-        if ((from != null || size != null) && (from < 0 || size < 0)) {
-            throw new ValidationException("Параметры size и from не могут меньше нуля");
-        }
     }
 }

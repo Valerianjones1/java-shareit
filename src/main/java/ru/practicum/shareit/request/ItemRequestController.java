@@ -5,15 +5,17 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.request.dto.ItemRequestCreateDto;
 import ru.practicum.shareit.request.dto.ItemRequestDto;
 
 import javax.validation.Valid;
+import javax.validation.constraints.Min;
 import java.util.List;
 
 @RestController
+@Validated
 @RequestMapping(path = "/requests")
 @AllArgsConstructor
 public class ItemRequestController {
@@ -40,18 +42,9 @@ public class ItemRequestController {
 
     @GetMapping("/all")
     public List<ItemRequestDto> getAllItemRequests(@RequestHeader(CUSTOM_USER_ID_HEADER) long requestorId,
-                                                   @RequestParam(required = false) Integer from,
-                                                   @RequestParam(required = false) Integer size) {
-        Pageable pageable = from == null || size == null ?
-                PageRequest.of(0, Integer.MAX_VALUE, Sort.by("created").descending().descending()) :
-                PageRequest.of(from / size,  size, Sort.by("created").descending());
-        checkParams(size, from);
+                                                   @RequestParam(defaultValue = "0") @Min(value = 0) int from,
+                                                   @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(from / size, size, Sort.by("created").descending());
         return service.getAll(requestorId, pageable);
-    }
-
-    private void checkParams(Integer size, Integer from) {
-        if ((from != null || size != null) && (from < 0 || size < 0)) {
-            throw new ValidationException("Параметры size и from не могут меньше нуля");
-        }
     }
 }

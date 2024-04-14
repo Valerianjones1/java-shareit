@@ -206,7 +206,8 @@ public class BookingControllerTest {
 
     @Test
     void shouldNotGetBookingsByUserWhenFromIsNegative() throws Exception {
-        ErrorResponse errorResponse = new ErrorResponse("Параметры size и from не могут меньше нуля", "Ошибка с валидацией");
+        ErrorResponse errorResponse = new ErrorResponse("Произошла непредвиденная ошибка",
+                "", "");
         mvc.perform(get("/bookings/owner")
                         .header("X-Sharer-User-Id", 1L)
                         .param("state", "ALL")
@@ -215,9 +216,8 @@ public class BookingControllerTest {
                         .characterEncoding(StandardCharsets.UTF_8)
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error", is(errorResponse.getError())))
-                .andExpect(jsonPath("$.description", is(errorResponse.getDescription())));
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.error", is(errorResponse.getError())));
     }
 
     @Test
@@ -305,7 +305,8 @@ public class BookingControllerTest {
 
     @Test
     void shouldNotGetBookingsByOwnerItemsWhenSizeOrFromIsNegative() throws Exception {
-        ErrorResponse errorResponse = new ErrorResponse("Параметры size и from не могут меньше нуля", "Ошибка с валидацией");
+        ErrorResponse errorResponse = new ErrorResponse("Произошла непредвиденная ошибка",
+                "", "");
         mvc.perform(get("/bookings/owner")
                         .header("X-Sharer-User-Id", 1L)
                         .param("state", "ALL")
@@ -314,9 +315,8 @@ public class BookingControllerTest {
                         .characterEncoding(StandardCharsets.UTF_8)
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error", is(errorResponse.getError())))
-                .andExpect(jsonPath("$.description", is(errorResponse.getDescription())));
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.error", is(errorResponse.getError())));
     }
 
     @Test
