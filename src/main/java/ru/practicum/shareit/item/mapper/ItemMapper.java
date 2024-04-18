@@ -6,6 +6,7 @@ import ru.practicum.shareit.item.Item;
 import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemCreateDto;
 import ru.practicum.shareit.item.dto.ItemDto;
+import ru.practicum.shareit.request.ItemRequest;
 import ru.practicum.shareit.user.User;
 
 import java.util.List;
@@ -18,9 +19,11 @@ public class ItemMapper {
         itemDto.setName(item.getName());
         itemDto.setAvailable(item.getAvailable());
         itemDto.setDescription(item.getDescription());
+        itemDto.setRequestId(item.getRequest() != null ? item.getRequest().getId() : null);
 
         return itemDto;
     }
+
 
     public static ItemDto mapToItemDto(Item item, BookingItemDto lastBooking,
                                        BookingItemDto nextBooking, List<CommentDto> comments) {
@@ -38,13 +41,14 @@ public class ItemMapper {
         return itemDto;
     }
 
-    public static Item mapToItem(ItemCreateDto itemCreateDto, User owner) {
+    public static Item mapToItem(ItemCreateDto itemCreateDto, User owner, ItemRequest request) {
         Item item = new Item();
         item.setId(itemCreateDto.getId());
         item.setName(itemCreateDto.getName());
         item.setAvailable(itemCreateDto.getAvailable());
         item.setDescription(itemCreateDto.getDescription());
         item.setOwner(owner);
+        item.setRequest(request);
 
         return item;
     }

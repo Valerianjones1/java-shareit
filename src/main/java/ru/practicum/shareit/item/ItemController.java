@@ -2,16 +2,22 @@ package ru.practicum.shareit.item;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemCreateDto;
 import ru.practicum.shareit.item.dto.ItemDto;
 
 import javax.validation.Valid;
+import javax.validation.constraints.Min;
 import java.util.List;
 
 @RestController
+@Validated
 @RequestMapping("/items")
 @RequiredArgsConstructor
 @Slf4j
@@ -44,15 +50,22 @@ public class ItemController {
     }
 
     @GetMapping
-    public List<ItemDto> getAllItemsOfOwner(@RequestHeader(CUSTOM_USER_ID_HEADER) long ownerId) {
+    public List<ItemDto> getAllItemsOfOwner(@RequestHeader(CUSTOM_USER_ID_HEADER) long ownerId,
+                                            @RequestParam(defaultValue = "0") @Min(value = 0) int from,
+                                            @RequestParam(defaultValue = "10") int size) {
         log.info(String.format("Получаем вещь владельца с идентификатором %s", ownerId));
-        return service.getAll(ownerId);
+
+        Pageable pageable = PageRequest.of(from / size, size, Sort.by("id").ascending());
+        return service.getAll(ownerId, pageable);
     }
 
     @GetMapping("/search")
-    public List<ItemDto> searchItems(@RequestParam String text) {
+    public List<ItemDto> searchItems(@RequestParam String text,
+                                     @RequestParam(defaultValue = "0") @Min(value = 0) int from,
+                                     @RequestParam(defaultValue = "10") int size) {
         log.info(String.format("Ищем вещи по любому полю, которое содержит %s в себе", text));
-        return service.search(text);
+        Pageable pageable = PageRequest.of(from / size, size);
+        return service.search(text, pageable);
     }
 
     @PostMapping("{itemId}/comment")
