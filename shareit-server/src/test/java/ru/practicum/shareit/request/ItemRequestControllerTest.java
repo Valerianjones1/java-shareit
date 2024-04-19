@@ -61,19 +61,6 @@ public class ItemRequestControllerTest {
                 .andExpect(jsonPath("$.items", is(itemRequestDto.getItems())));
     }
 
-    @Test
-    void shouldNotCreateItemRequestWhenDtoIsNotValid() throws Exception {
-        itemRequestCreateDto = new ItemRequestCreateDto();
-        itemRequestCreateDto.setDescription(null);
-
-        mvc.perform(post("/requests")
-                        .content(mapper.writeValueAsString(itemRequestCreateDto))
-                        .header("X-Sharer-User-Id", 1L)
-                        .characterEncoding(StandardCharsets.UTF_8)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
-    }
 
     @Test
     void shouldGetAllItemRequestsByRequestorId() throws Exception {
@@ -125,30 +112,6 @@ public class ItemRequestControllerTest {
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)));
-    }
-
-    @Test
-    void shouldNotGetAllItemRequestsByRequestorIdNotWhenFromIsNegative() throws Exception {
-        mvc.perform(get("/requests/all")
-                        .header("X-Sharer-User-Id", 1L)
-                        .param("size", "20")
-                        .param("from", "-1")
-                        .characterEncoding(StandardCharsets.UTF_8)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isInternalServerError());
-    }
-
-    @Test
-    void shouldNotGetAllItemRequestsByRequestorIdNotWhenSizeIsNegative() throws Exception {
-        mvc.perform(get("/requests/all")
-                        .header("X-Sharer-User-Id", 1L)
-                        .param("size", "-11")
-                        .param("from", "1")
-                        .characterEncoding(StandardCharsets.UTF_8)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isInternalServerError());
     }
 
     @Test

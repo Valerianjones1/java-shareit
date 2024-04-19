@@ -12,4 +12,10 @@ public class ErrorResponse {
         this.error = error;
         this.description = description;
     }
+
+    public ErrorResponse(String error, String description, String stacktrace) {
+        this.error = error;
+        this.description = description;
+        this.stacktrace = stacktrace;
+    }
 }
