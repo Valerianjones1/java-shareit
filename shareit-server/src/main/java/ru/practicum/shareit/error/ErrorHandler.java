@@ -21,13 +21,6 @@ public class ErrorHandler {
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorResponse handleValidation(final ValidationException e) {
-        log.info("Ошибка с валидацией");
-        return new ErrorResponse(e.getMessage(), "Ошибка с валидацией");
-    }
-
-    @ExceptionHandler
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handleValid(final MethodArgumentNotValidException e) {
         log.info("Ошибка с валидацией");
         return new ErrorResponse(e.getMessage(), "Ошибка с валидацией");
