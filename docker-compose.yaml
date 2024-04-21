@@ -6,30 +6,22 @@ services:
   # описание контейнера db
   db:
     image: postgres:13.7-alpine
-
     ports:
       - "6541:5432"
-
-    volumes:
-      - /var/lib/postgresql/data/
-
     environment:
       - POSTGRES_DB=shareit
       - POSTGRES_USER=root
       - POSTGRES_PASSWORD=root
-
+  # описание контейнера gateway
   gateway:
     build: shareit-gateway
-
     ports:
       - "8080:8080"
-
     depends_on:
       - server
-
     environment:
-      - SHAREIT-SERVER_URL=http://server:8090
-
+      - SHAREIT_SERVER_URL=http://server:8090
+  # описание контейнера server
   server:
     build: shareit-server
     ports:
@@ -37,8 +29,7 @@ services:
     depends_on:
       - db
     environment:
-      - DB_NAME=shareit
-      - POSTGRES_USER=root
-      - POSTGRES_PASSWORD=root
-      - DB_HOST=db
-      - DB_PORT=5432
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://shareIt-db:5432/shareit
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_DRIVER_CLASS_NAME=org.postgresql.Driver
